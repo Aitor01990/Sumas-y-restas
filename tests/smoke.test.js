@@ -48,7 +48,7 @@ test('la PWA mantiene los recursos esenciales', () => {
 });
 
 test('HTML carga estilos y lógica separados', () => {
-  assert.match(html, /href="styles\.css"/);
-  assert.match(html, /src="app\.js"/);
+  assert.match(html, /href="styles\.css\?v=17\.3"/);
+  assert.match(html, /src="app\.js\?v=17\.3"/);
   assert.doesNotMatch(html, /<style>/);
 });
