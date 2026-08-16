@@ -1,4 +1,4 @@
-const CACHE_NAME = 'matematicas-tradicionales-v17-3-beta';
+const CACHE_NAME = 'matematicas-tradicionales-v17-5-beta';
 const APP_FILES = [
   './',
   './index.html',

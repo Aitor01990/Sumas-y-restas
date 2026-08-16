@@ -38,7 +38,15 @@ test('V17 conserva ajustes por usuario y acceso adulto', () => {
   assert.match(app, /programProfiles/);
   assert.match(app, /startConfiguredProgram/);
   assert.match(app, /toLowerCase\(\)!=='oli'/);
-  assert.match(app, /openParentGate\(\)\},2000/);
+  assert.match(app, /settingsBtn'\)\.onclick=openParentGate/);
+});
+
+test('objetivos por sesión diaria y semanal', () => {
+  assert.match(app, /registerCompletedSession\('practice'\)/);
+  assert.match(app, /registerCompletedSession\('exam'\)/);
+  assert.match(app, /completedSession\('practice','day'\)/);
+  assert.match(app, /completedSession\('exam','week'\)/);
+  assert.doesNotMatch(app, /settingsBlock\('daily'/);
 });
 
 test('la PWA mantiene los recursos esenciales', () => {
@@ -48,7 +56,7 @@ test('la PWA mantiene los recursos esenciales', () => {
 });
 
 test('HTML carga estilos y lógica separados', () => {
-  assert.match(html, /href="styles\.css\?v=17\.3"/);
-  assert.match(html, /src="app\.js\?v=17\.3"/);
+  assert.match(html, /href="styles\.css\?v=17\.5"/);
+  assert.match(html, /src="app\.js\?v=17\.5"/);
   assert.doesNotMatch(html, /<style>/);
 });

@@ -14,8 +14,7 @@ const DEFAULT_SETTINGS={
 };
 const DEFAULT_PROFILES={
   practice:{counts:{add:2,sub:2,mul:1,div:1},settings:clone(DEFAULT_SETTINGS)},
-  exam:{counts:{add:2,sub:2,mul:1,div:1},settings:clone(DEFAULT_SETTINGS)},
-  daily:{counts:{add:3,sub:3,mul:2,div:2},settings:clone(DEFAULT_SETTINGS)}
+  exam:{counts:{add:2,sub:2,mul:1,div:1},settings:clone(DEFAULT_SETTINGS)}
 };
 let settingsState=clone(DEFAULT_SETTINGS),programProfiles=clone(DEFAULT_PROFILES);
 let current=null,record=null,completedThisSession=0,exerciseSolved=false,revealConfirm=false;
@@ -65,7 +64,10 @@ function ensureUserConfig(){
   persistUserConfig();
 }
 function persistUserConfig(){const user=db.users[currentUser];if(!user)return;user.config={main:clone(settingsState),profiles:clone(programProfiles)};saveDB()}
-function dailyTarget(){return Object.values(programProfiles.daily?.counts||{}).reduce((sum,n)=>sum+(+n||0),0)}
+function sessionsForUser(){const user=db.users[currentUser];if(!user)return[];if(!Array.isArray(user.sessions))user.sessions=[];return user.sessions}
+function weekStartKey(value=new Date()){const d=new Date(value);d.setHours(12,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return localDateKey(d)}
+function completedSession(mode,period){return sessionsForUser().some(x=>x.mode===mode&&(period==='day'?localDateKey(x.date)===localDateKey(new Date()):weekStartKey(x.date)===weekStartKey()))}
+function registerCompletedSession(mode){sessionsForUser().push({mode,date:new Date().toISOString()});saveDB()}
 
 function openUser(name){
   currentUser=name;
@@ -103,9 +105,8 @@ function updateOperationStats(){
   updateDailyGoal();
 }
 function updateDailyGoal(){
-  const user=db.users[currentUser];if(!user)return;const goal=dailyTarget(),today=localDateKey(new Date()),done=historyFor(currentUser).filter(x=>localDateKey(x.date)===today).length,percent=goal?Math.min(100,Math.round(done/goal*100)):0;
-  $('dailyGoalBox').innerHTML=`<div class="daily-goal-head"><span>Objetivo diario: ${done} de ${goal}</span></div><div class="goal-track"><div class="goal-fill" style="width:${percent}%"></div></div><div class="goal-done-text">${goal?(done>=goal?'★ ¡Objetivo conseguido hoy!':'Sigue practicando para completar el día'):'Configura la práctica diaria en Ajustes'}</div>${goal?'<button id="dailyStartBtn" class="daily-start-btn">Empezar práctica diaria</button>':''}`;
-  if($('dailyStartBtn'))$('dailyStartBtn').onclick=()=>startConfiguredProgram('daily');
+  if(!db.users[currentUser])return;const dailyDone=completedSession('practice','day'),weeklyDone=completedSession('exam','week');
+  $('dailyGoalBox').innerHTML=`<div class="habit-goal ${dailyDone?'done':''}"><span>${dailyDone?'✓':'○'}</span><div><b>Objetivo diario</b><small>${dailyDone?'Modo ejercicios completado hoy':'Completa el Modo ejercicios una vez hoy'}</small></div></div><div class="habit-goal ${weeklyDone?'done':''}"><span>${weeklyDone?'✓':'○'}</span><div><b>Objetivo semanal</b><small>${weeklyDone?'Modo examen completado esta semana':'Completa el Modo examen una vez esta semana'}</small></div></div>`;
 }
 $('newUserBtn').onclick=()=>{$('newUserRow').classList.toggle('show');if($('newUserRow').classList.contains('show'))$('newUserName').focus()};
 $('saveUserBtn').onclick=()=>{
@@ -326,7 +327,7 @@ function settingsBlock(scope,title,help){
     <div class="settings-subtitle">Divisiones</div><div class="program-fields">${count('div')}${settingField(scope,'div','Dividendo','dividendDigits',[2,3,4],s.div.dividendDigits,v=>`${v} cifras`)}${settingField(scope,'div','Divisor','divisorDigits',[1,2,3],s.div.divisorDigits,v=>`${v} cifras`)}${settingField(scope,'div','Resultado','resultType',['integer','terminating','pure','mixed'],s.div.resultType,v=>({integer:'Entero exacto',terminating:'Decimal exacto',pure:'Periódico sencillo',mixed:'Periódico mixto'})[v])}</div></section>`;
 }
 function renderSettings(){
-  $('settingsOptions').innerHTML=settingsBlock('main','Modos principales','Estos niveles se usan al pulsar directamente Sumas, Restas, Multiplicar o Dividir.')+settingsBlock('practice','Modo ejercicios','Serie con Corregir y Ver respuesta. Los ejercicios aparecen en orden aleatorio.')+settingsBlock('exam','Modo examen','Serie sin corrección durante el examen; la revisión aparece al final.')+settingsBlock('daily','Práctica diaria','El objetivo del calendario es la suma de estas cantidades.');
+  $('settingsOptions').innerHTML=settingsBlock('main','Modos principales','Estos niveles se usan al pulsar directamente Sumas, Restas, Multiplicar o Dividir.')+settingsBlock('practice','Modo ejercicios','Serie con Corregir y Ver respuesta. Completarla cumple el objetivo diario.')+settingsBlock('exam','Modo examen','Serie sin corrección durante el examen. Completarla cumple el objetivo semanal.');
   $('settingsOptions').querySelectorAll('[data-setting-scope]').forEach(select=>select.onchange=()=>{
     const scope=select.dataset.settingScope,op=select.dataset.settingOp,key=select.dataset.settingKey,numeric=!['carry','resultType'].includes(key),value=numeric?+select.value:select.value,target=scope==='main'?settingsState:programProfiles[scope].settings;
     if(key==='quantity')programProfiles[scope].counts[op]=value;else target[op][key]=value;
@@ -804,12 +805,14 @@ function advanceQueuedExercise(){
 }
 function showExamResults(){
   const correct=examResults.filter(x=>x.correct).length,total=examResults.length;
+  registerCompletedSession('exam');
   $('resultTitle').textContent='Resultado del examen';
   $('examScore').textContent=`${correct} / ${total}`;
   $('examReview').innerHTML=examResults.map((x,i)=>`<div class="exam-review-item ${x.correct?'ok':'fail'}"><div>${i+1}. ${escapeHtml(x.expression)} · ${x.correct?'✓':`Tu respuesta final: ${escapeHtml(x.answer)} ✗`}</div>${x.mistakes?.length?`<small>${x.mistakes.map(m=>escapeHtml(m)).join(' · ')}</small>`:''}</div>`).join('');
   showScreen('examResultScreen');
 }
 function showPracticeResults(){
+  registerCompletedSession('practice');
   $('resultTitle').textContent='Resumen de la práctica';
   $('examScore').textContent=`${practiceResults.length} ejercicio${practiceResults.length===1?'':'s'}`;
   $('examReview').innerHTML=practiceResults.map((x,i)=>`<div class="exam-review-item ${x.correct?'ok':x.solutionUsed?'':'fail'}"><div>${i+1}. ${escapeHtml(x.expression)}</div><small>Intentos: ${x.attempts} · ${x.correct?'Completado correctamente ✓':x.solutionUsed?'Completado con la respuesta':'Sin completar'}${x.solutionUsed?' · Usó Ver respuesta':' · Sin ver la respuesta'}</small></div>`).join('');
@@ -970,10 +973,10 @@ function activityStreak(keys){
   let streak=0;while(active.has(localDateKey(cursor))){streak++;cursor.setDate(cursor.getDate()-1)}return streak
 }
 function renderCalendar(hist){
-  const dayCounts={};hist.forEach(x=>{const key=localDateKey(x.date);dayCounts[key]=(dayCounts[key]||0)+1});const active=new Set(Object.keys(dayCounts)),goal=dailyTarget(),year=historyMonth.getFullYear(),month=historyMonth.getMonth(),first=(new Date(year,month,1).getDay()+6)%7,days=new Date(year,month+1,0).getDate();
+  const dayCounts={};hist.forEach(x=>{const key=localDateKey(x.date);dayCounts[key]=(dayCounts[key]||0)+1});const active=new Set(Object.keys(dayCounts)),practiceDays=new Set(sessionsForUser().filter(x=>x.mode==='practice').map(x=>localDateKey(x.date))),year=historyMonth.getFullYear(),month=historyMonth.getMonth(),first=(new Date(year,month,1).getDay()+6)%7,days=new Date(year,month+1,0).getDate();
   let cells='<div class="calendar-week">'+['L','M','X','J','V','S','D'].map(x=>`<span>${x}</span>`).join('')+'</div><div class="calendar-grid">';
   for(let i=0;i<first;i++)cells+='<span class="calendar-day empty"></span>';
-  for(let day=1;day<=days;day++){const key=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;cells+=`<button class="calendar-day ${active.has(key)?'has-work':''} ${goal&&dayCounts[key]>=goal?'goal-done':''} ${selectedHistoryDate===key?'selected':''}" data-history-day="${key}" title="${dayCounts[key]||0} ejercicios">${day}</button>`}
+  for(let day=1;day<=days;day++){const key=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;cells+=`<button class="calendar-day ${active.has(key)?'has-work':''} ${practiceDays.has(key)?'goal-done':''} ${selectedHistoryDate===key?'selected':''}" data-history-day="${key}" title="${dayCounts[key]||0} ejercicios">${day}</button>`}
   cells+='</div>';
   $('historyCalendar').innerHTML=`<div class="calendar-head"><button data-calendar-move="-1">‹</button><b>${historyMonth.toLocaleDateString('es-ES',{month:'long',year:'numeric'})}</b><button data-calendar-move="1">›</button></div>${cells}`;
   $('historyCalendar').querySelectorAll('[data-calendar-move]').forEach(btn=>btn.onclick=()=>{historyMonth=new Date(year,month+(+btn.dataset.calendarMove),1);renderHistoryCalendar(currentUser)});
@@ -1039,11 +1042,7 @@ function validateParentGate(){
   $('parentGateModal').classList.remove('show');renderSettings();showScreen('settingsScreen');
 }
 $('parentGateBtn').onclick=validateParentGate;$('parentAnswer').onkeydown=e=>{if(e.key==='Enter')validateParentGate()};
-let settingsHoldTimer=null,settingsHoldOpened=false;
-function cancelSettingsHold(){clearTimeout(settingsHoldTimer);settingsHoldTimer=null}
-$('settingsBtn').addEventListener('pointerdown',e=>{e.preventDefault();settingsHoldOpened=false;cancelSettingsHold();settingsHoldTimer=setTimeout(()=>{settingsHoldOpened=true;openParentGate()},2000)});
-['pointerup','pointerleave','pointercancel'].forEach(type=>$('settingsBtn').addEventListener(type,cancelSettingsHold));
-$('settingsBtn').onclick=e=>{e.preventDefault();if(!settingsHoldOpened)$('settingsBtn').animate([{transform:'rotate(0)'},{transform:'rotate(18deg)'},{transform:'rotate(0)'}],{duration:300})};
+$('settingsBtn').onclick=openParentGate;
 $('clearHistory').onclick=()=>{
   if(!currentUser||!db.users[currentUser])return;
   if(confirm(`¿Borrar todo el historial de ${currentUser}?`)){
