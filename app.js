@@ -45,6 +45,7 @@ function exactDigits(d){return [10**(d-1),10**d-1]}
 function digitsOf(n,d){return String(n).padStart(d,'0').split('').map(Number)}
 function labelOp(op){return({add:'Suma',sub:'Resta',mul:'Multiplicación',div:'División'})[op]||op}
 function symbolOp(op){return({add:'+',sub:'−',mul:'×',div:'÷'})[op]||'?'}
+function isExamSession(){return sessionMode==='exam'||sessionMode==='supportExam'}
 function clone(value){return JSON.parse(JSON.stringify(value))}
 function mergeSettings(source={}){
   const result=clone(DEFAULT_SETTINGS);
@@ -462,13 +463,13 @@ function newExercise(queueItem=null){
   renderExercise();
 }
 function makeText(parent,row,col,text,cls='digit',id=''){const el=document.createElement('div');el.textContent=text;el.className=cls;el.style.gridRow=row;el.style.gridColumn=col;if(id)el.id=id;parent.appendChild(el);return el}
-function onEdit(){exerciseSolved=false;$('mainBtn').textContent=sessionMode==='exam'?'Siguiente':'Corregir';$('solutionBtn').disabled=false;$('status').textContent='';$('status').className='status';resetReveal()}
+function onEdit(){exerciseSolved=false;$('mainBtn').textContent=isExamSession()?'Siguiente':'Corregir';$('solutionBtn').disabled=false;$('status').textContent='';$('status').className='status';resetReveal()}
 function makeInput(parent,row,col,type,index,enabled=true,maxLength=1){const input=document.createElement('input');input.className='small-input'+(maxLength===2?' two':'');input.inputMode='numeric';input.maxLength=maxLength;input.autocomplete='off';input.dataset.type=type;input.dataset.index=index;input.style.gridRow=row;input.style.gridColumn=col;if(!enabled)input.disabled=true;input.addEventListener('input',()=>{input.value=input.value.replace(/\D/g,'').slice(0,maxLength);input.classList.remove('good','bad');onEdit();if(type==='bottomreplacement'){const original=$('bottom-'+index);if(original)original.classList.toggle('changed',input.value!=='')}});parent.appendChild(input);return input}
 function makeAnswer(parent,row,col,index){const input=document.createElement('input');input.className='answer';input.inputMode='numeric';input.maxLength=1;input.autocomplete='off';input.dataset.type='answer';input.dataset.index=index;input.style.gridRow=row;input.style.gridColumn=col;input.addEventListener('input',()=>{input.value=input.value.replace(/\D/g,'').slice(-1);input.classList.remove('good','bad');onEdit()});parent.appendChild(input);return input}
 function renderExercise(){
   exerciseSolved=false;
   resetReveal();
-  const exam=sessionMode==='exam';
+  const exam=isExamSession();
   $('solutionBtn').disabled=false;$('solutionBtn').style.display=exam?'none':'';
   document.querySelector('#exerciseScreen .actions').style.gridTemplateColumns=exam?'1fr':'';
   $('mainBtn').textContent=exam?'Siguiente':'Corregir';
@@ -626,7 +627,7 @@ function renderMultiplication(host){
 function updateMultiplicationProgress(){
   if(current?.op!=='mul')return;
   const rows=[...document.querySelectorAll('#math [data-mul-step]')],final=[...document.querySelectorAll('#math [data-mul-final]')];
-  if(sessionMode==='exam'){rows.forEach(x=>x.classList.remove('mul-hidden'));final.forEach(x=>x.classList.remove('mul-hidden'));return}
+  if(isExamSession()){rows.forEach(x=>x.classList.remove('mul-hidden'));final.forEach(x=>x.classList.remove('mul-hidden'));return}
   rows.forEach(x=>x.classList.add('mul-hidden'));final.forEach(x=>x.classList.add('mul-hidden'));
   let pending=null;
   for(let i=0;i<rows.length;i++){
@@ -698,7 +699,7 @@ function renderDivision(host){
 function updateDivisionProgress(){
   if(current?.op!=='div')return;
   const all=[...document.querySelectorAll('#math [data-step],#math [data-reveal]')];
-  if(sessionMode==='exam'){all.forEach(el=>el.classList.remove('division-hidden','division-current','good','bad'));return}
+  if(isExamSession()){all.forEach(el=>el.classList.remove('division-hidden','division-current','good','bad'));return}
   all.forEach(el=>el.classList.add('division-hidden'));
   let nextFocus=null;
   for(let stepIndex=0;stepIndex<current.divisionSteps.length;stepIndex++){
@@ -794,14 +795,30 @@ function examMistakes(){
 }
 function submitExamExercise(){
   const correct=isCurrentCorrect(),answer=enteredAnswer(),expression=expressionCurrent(),mistakes=examMistakes();
-  record.attempts.push({at:new Date().toISOString(),answer,correct,work:snapshotWork()});commitRecord();
+  if(sessionMode==='exam'){record.attempts.push({at:new Date().toISOString(),answer,correct,work:snapshotWork()});commitRecord()}else record=null;
   examResults.push({correct,answer,expression,operation:current.op,mistakes});completedThisSession++;
   advanceQueuedExercise();
 }
 function advanceQueuedExercise(){
   queueIndex++;
   if(queueIndex<exerciseQueue.length){newExercise(exerciseQueue[queueIndex]);return}
-  if(sessionMode==='exam')showExamResults();else showPracticeResults();
+  if(sessionMode==='exam')showExamResults();else if(sessionMode==='supportExam')showSupportResults();else showPracticeResults();
+}
+function showSupportResults(){
+  const correct=examResults.filter(x=>x.correct).length,passed=correct===4;
+  $('supportResultMessage').textContent=passed?'¡Ahora sí te creemos! 😄 Gracias de corazón por valorar el trabajo y por ese café.':'¡Casi! Parece que todavía necesitas un poco más de práctica 😄';
+  $('supportScore').textContent=`${correct} / 4`;
+  $('supportReview').innerHTML=examResults.map((x,i)=>`<div class="exam-review-item ${x.correct?'ok':'fail'}"><div>${i+1}. ${escapeHtml(x.expression)} · ${x.correct?'✓':`Tu respuesta final: ${escapeHtml(x.answer)} ✗`}</div>${x.mistakes?.length?`<small>${x.mistakes.map(m=>escapeHtml(m)).join(' · ')}</small>`:''}</div>`).join('');
+  $('openSupportLink').style.display=passed?'inline-grid':'none';$('retrySupportBtn').style.display=passed?'none':'';showScreen('supportResultScreen');
+}
+function leaveSupportChallenge(){sessionMode='single';exerciseQueue=[];examResults=[];queueIndex=0;record=null;showScreen('userScreen');renderUsers()}
+function startSupportChallenge(){
+  exerciseQueue=shuffled([
+    {op:'add',settings:{digits:3,count:3,carry:'yes'}},
+    {op:'sub',settings:{digits:3,carry:'yes'}},
+    {op:'mul',settings:{multiplicandDigits:2,multiplierDigits:1}},
+    {op:'div',settings:{dividendDigits:2,divisorDigits:1,resultType:'integer'}}
+  ]);queueIndex=0;examResults=[];practiceResults=[];completedThisSession=0;sessionMode='supportExam';showScreen('exerciseScreen');newExercise(exerciseQueue[0]);
 }
 function showExamResults(){
   const correct=examResults.filter(x=>x.correct).length,total=examResults.length;
@@ -1002,6 +1019,11 @@ function renderHistoryCalendar(name){
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
 $('backUsersBtn').onclick=()=>{showScreen('userScreen');renderUsers()};
+$('supportProjectBtn').onclick=()=>showScreen('supportIntroScreen');
+$('backSupportIntroBtn').onclick=leaveSupportChallenge;$('declineSupportBtn').onclick=leaveSupportChallenge;
+$('acceptSupportBtn').onclick=startSupportChallenge;
+$('backSupportResultBtn').onclick=leaveSupportChallenge;$('leaveSupportBtn').onclick=leaveSupportChallenge;
+$('retrySupportBtn').onclick=startSupportChallenge;
 $('backSettingsBtn').onclick=()=>{showScreen('operationScreen');updateOperationStats()};
 $('saveSettingsBtn').onclick=()=>{persistUserConfig();$('settingsSaveNote').textContent='Ajustes guardados';setTimeout(()=>{$('settingsSaveNote').textContent='';showScreen('operationScreen');updateOperationStats()},650)};
 $('backOperationsBtn').onclick=()=>{showScreen('operationScreen');updateOperationStats()};
@@ -1016,8 +1038,8 @@ $('startBtn').onclick=()=>{
   showScreen('exerciseScreen');
   newExercise();
 };
-$('backBtn').onclick=()=>{showScreen('operationScreen');updateOperationStats()};
-$('mainBtn').onclick=()=>{if(sessionMode==='exam')return submitExamExercise();if(exerciseSolved)return sessionMode==='practice'?advanceQueuedExercise():newExercise();grade()};
+$('backBtn').onclick=()=>{if(sessionMode==='supportExam'){record=null;showScreen('supportIntroScreen');return}showScreen('operationScreen');updateOperationStats()};
+$('mainBtn').onclick=()=>{if(isExamSession())return submitExamExercise();if(exerciseSolved)return sessionMode==='practice'?advanceQueuedExercise():newExercise();grade()};
 $('finishExamBtn').onclick=()=>{sessionMode='single';showScreen('operationScreen');updateOperationStats()};
 $('solutionBtn').onclick=()=>{
   if(!revealConfirm){

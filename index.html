@@ -12,7 +12,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Matemáticas tradicionales</title>
-<link rel="stylesheet" href="styles.css?v=17.7">
+<link rel="stylesheet" href="styles.css?v=17.8">
 </head>
 <body>
 <div class="app">
@@ -27,10 +27,10 @@
 
     <div id="userList" class="user-list"></div>
     <button id="newUserBtn" class="new-user-button">+ Crear nuevo usuario</button>
-    <p class="app-version">Versión 17.7 beta</p>
+    <p class="app-version">Versión 17.8 beta</p>
     <aside class="support-project" aria-label="Apoyar el proyecto">
       <div><b>¿Te resulta útil esta aplicación?</b><span>Seguirá siendo gratuita. Puedes apoyar voluntariamente su mantenimiento y futuras mejoras.</span></div>
-      <a href="https://buymeacoffee.com/aitorcrea" target="_blank" rel="noopener noreferrer">☕ Apoyar el proyecto</a>
+      <button id="supportProjectBtn" type="button">☕ Apoyar el proyecto</button>
     </aside>
 
     <div id="newUserRow" class="new-user-row">
@@ -38,6 +38,16 @@
       <button id="saveUserBtn" class="compact-btn">Crear</button>
     </div>
   </div>
+</section>
+
+<section id="supportIntroScreen" class="screen">
+  <div class="page-head"><button id="backSupportIntroBtn" class="icon-btn" aria-label="Volver">←</button><div class="page-head-title">Antes de continuar…<span class="page-head-sub">El apoyo siempre es voluntario</span></div><div class="ghost-space"></div></div>
+  <div class="card support-gate-card"><div class="support-gate-icon">☕</div><h2>¿Utilizas realmente esta aplicación y crees que merece tu apoyo?</h2><p>La aplicación seguirá siendo gratuita. Solo continúa si de verdad te resulta útil.</p><div class="support-gate-actions"><button id="declineSupportBtn" class="answer-btn">No, volver</button><button id="acceptSupportBtn" class="main-btn">Sí, quiero continuar</button></div></div>
+</section>
+
+<section id="supportResultScreen" class="screen">
+  <div class="page-head"><button id="backSupportResultBtn" class="icon-btn" aria-label="Volver">←</button><div class="page-head-title">Prueba terminada<span class="page-head-sub">Se necesitan cuatro aciertos</span></div><div class="ghost-space"></div></div>
+  <div class="card exam-summary"><div id="supportResultMessage" class="support-result-message"></div><div id="supportScore" class="exam-score"></div><div id="supportReview" class="exam-review"></div><div class="support-result-actions"><button id="retrySupportBtn" class="answer-btn">Intentarlo de nuevo</button><a id="openSupportLink" class="support-link-btn" href="https://buymeacoffee.com/aitorcrea" target="_blank" rel="noopener noreferrer">☕ Invitar a AitorCrea a un café</a><button id="leaveSupportBtn" class="answer-btn">Volver al inicio</button></div><p class="support-free-note">Apoyar es completamente voluntario. La aplicación seguirá siendo gratuita.</p></div>
 </section>
 
 <!-- 2. OPERACIÓN -->
@@ -142,7 +152,7 @@
 <div id="offlineBadge" class="offline-badge" role="status">Sin conexión · tus datos se guardan en este dispositivo</div>
 <div id="updateBanner" class="update-banner"><span>Nueva versión disponible</span><button id="updateBtn">Actualizar</button></div>
 
-<script src="app.js?v=17.7"></script>
+<script src="app.js?v=17.8"></script>
 </body>
 </html>
 
