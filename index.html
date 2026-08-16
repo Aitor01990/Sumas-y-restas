@@ -310,7 +310,12 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
   .mul-step-input,.mul-final .answer{width:41px;height:41px;font-size:27px}
 }
 
-.division-work{grid-column:1/-1}
+.division-work{grid-column:1/-1;width:min(680px,100%)}
+.division-traditional{--div-cols:4;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;justify-content:center;font-family:"Courier New",monospace;font-weight:800;width:100%}
+.division-left{display:grid;grid-template-columns:repeat(var(--div-cols),42px);grid-auto-rows:42px;justify-content:end;align-items:center;padding-right:10px;border-right:3px solid var(--text)}
+.division-top-digit,.division-fixed-digit{display:grid;place-items:center;font-size:34px;height:42px}.division-fixed-digit.decimal-zero{color:#475467}.division-minus{display:grid;place-items:center;font-size:25px}.division-work-input{width:38px;height:38px;padding:0;text-align:center;border:0;border-bottom:3px solid #98a2b3;border-radius:5px 5px 2px 2px;background:#fff;font-family:"Courier New",monospace;font-size:27px;font-weight:800}.division-work-input.good{border-bottom-color:var(--ok)!important}.division-work-input.bad{border-bottom-color:var(--bad)!important}.division-sub-rule{height:2px;background:#667085;align-self:end;margin-bottom:3px}.division-right-traditional{display:grid;grid-template-rows:auto auto;min-width:92px}.division-right-traditional .divisor{border-bottom:3px solid var(--text)}.division-guide{font-size:12px;color:var(--muted);text-align:center;line-height:1.4}.division-guide b{color:var(--text)}
+@media(max-width:560px){.division-left{grid-template-columns:repeat(var(--div-cols),36px);grid-auto-rows:38px;padding-right:7px}.division-top-digit,.division-fixed-digit{font-size:29px;height:38px}.division-work-input{width:33px;height:34px;font-size:24px}.division-right-traditional{min-width:82px}.division-traditional{justify-content:start}.division-work{overflow-x:auto;padding:2px}}
+.division-fixed-digit.decimal-zero{position:relative}.division-fixed-digit.decimal-zero[data-comma="true"]::before{content:",";position:absolute;left:-5px;bottom:2px}.division-minus{justify-self:start;transform:translateX(-17px);z-index:2}
 </style>
 </head>
 <body>
@@ -326,7 +331,7 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
 
     <div id="userList" class="user-list"></div>
     <button id="newUserBtn" class="new-user-button">+ Crear nuevo usuario</button>
-    <p class="app-version">Versión 13 beta</p>
+    <p class="app-version">Versión 13.1 beta</p>
 
     <div id="newUserRow" class="new-user-row">
       <input id="newUserName" type="text" maxlength="24" placeholder="Nombre">
@@ -710,14 +715,14 @@ function divisionSteps(a,b,exp){
     const partial=remainder*10+Number(char),digit=Math.floor(partial/b),product=digit*b;
     remainder=partial-product;
     if(digit||started||index===String(a).length-1){
-      started=true;steps.push({partial,digit,product,remainder,decimal:false});
+      started=true;steps.push({partial,digit,product,remainder,decimal:false,column:index});
     }
   });
   const decimalDigits=[...exp.prefix,...exp.repeat];
-  decimalDigits.forEach(digit=>{
+  decimalDigits.forEach((digit,index)=>{
     const partial=remainder*10,product=digit*b;
     remainder=partial-product;
-    steps.push({partial,digit,product,remainder,decimal:true});
+    steps.push({partial,digit,product,remainder,decimal:true,column:String(a).length+index});
   });
   return steps;
 }
@@ -979,9 +984,17 @@ function divisionAnswerInput(index){
 }
 function renderDivision(host){
   const work=document.createElement('div');work.className='division-work';
-  const board=document.createElement('div');board.className='division-board';
-  const dividend=document.createElement('div');dividend.className='dividend';dividend.textContent=current.a;
-  const right=document.createElement('div');right.className='div-right';
+  const board=document.createElement('div');board.className='division-traditional';
+  const left=document.createElement('div');left.className='division-left';
+  const decimalCount=current.division.prefix.length+current.division.repeat.length;
+  const totalColumns=String(current.a).length+decimalCount;
+  left.style.setProperty('--div-cols',totalColumns);
+  String(current.a).split('').forEach((digit,index)=>makeText(left,1,index+1,digit,'division-top-digit'));
+  for(let i=0;i<decimalCount;i++){
+    const zero=makeText(left,1,String(current.a).length+i+1,'0','division-top-digit division-fixed-digit decimal-zero');
+    if(i===0)zero.dataset.comma='true';
+  }
+  const right=document.createElement('div');right.className='division-right-traditional';
   const divisor=document.createElement('div');divisor.className='divisor';divisor.textContent=current.b;
   const q=document.createElement('div');q.className='quotient-inputs';
   let answerIndex=0;
@@ -995,22 +1008,31 @@ function renderDivision(host){
       q.appendChild(repeat);
     }
   }
-  right.append(divisor,q);board.append(dividend,right);work.appendChild(board);
+  right.append(divisor,q);
+  current.divisionSteps.forEach((step,stepIndex)=>{
+    const product=String(step.product),productRow=2+stepIndex*3,endColumn=step.column+1;
+    makeText(left,productRow,Math.max(1,endColumn-product.length),'−','division-minus');
+    product.split('').forEach((_,digitIndex)=>{
+      const inp=document.createElement('input');inp.className='division-work-input';inp.inputMode='numeric';inp.maxLength=1;inp.autocomplete='off';inp.dataset.type='divproduct';inp.dataset.index=`${stepIndex}-${digitIndex}`;inp.style.gridRow=productRow;inp.style.gridColumn=endColumn-product.length+digitIndex+1;
+      inp.addEventListener('input',()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);inp.classList.remove('good','bad');onEdit()});left.appendChild(inp);
+    });
+    const rule=document.createElement('div');rule.className='division-sub-rule';rule.style.gridRow=productRow+1;rule.style.gridColumn=`${Math.max(1,endColumn-product.length)} / ${endColumn+1}`;left.appendChild(rule);
+    const remainder=String(step.remainder),remainderRow=productRow+2;
+    remainder.split('').forEach((_,digitIndex)=>{
+      const inp=document.createElement('input');inp.className='division-work-input';inp.inputMode='numeric';inp.maxLength=1;inp.autocomplete='off';inp.dataset.type='divremainder';inp.dataset.index=`${stepIndex}-${digitIndex}`;inp.style.gridRow=remainderRow;inp.style.gridColumn=Math.max(1,endColumn-remainder.length+digitIndex+1);
+      inp.addEventListener('input',()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);inp.classList.remove('good','bad');onEdit()});left.appendChild(inp);
+    });
+    const next=current.divisionSteps[stepIndex+1];
+    if(next){
+      const lowered=String(next.partial).slice(-1);
+      makeText(left,remainderRow,next.column+1,lowered,'division-fixed-digit');
+    }
+  });
+  board.append(left,right);work.appendChild(board);
   const names={integer:'entero exacto',terminating:'decimal exacto',pure:'periódico sencillo',mixed:'periódico mixto'};
   const note=document.createElement('div');note.className='division-note';note.textContent=`Resultado ${names[current.resultType]}.${current.division.repeat.length?' La línea morada marca el período.':''}`;work.appendChild(note);
-  const steps=document.createElement('div');steps.className='division-steps';
-  current.divisionSteps.forEach((step,index)=>{
-    const row=document.createElement('div');row.className='division-step';
-    const text=document.createElement('div');text.className='division-step-text';text.innerHTML=`${step.decimal?'Añade un 0:':'Toma la siguiente cifra:'} <b>${step.partial} ÷ ${current.b} = ${step.digit}</b>`;
-    row.appendChild(text);
-    [['divproduct','Producto',step.product],['divremainder','Resto',step.remainder]].forEach(([type,label])=>{
-      const field=document.createElement('label');field.className='division-step-field';field.innerHTML=`<span>${label}</span>`;
-      const inp=document.createElement('input');inp.className='div-step-input';inp.inputMode='numeric';inp.autocomplete='off';inp.dataset.type=type;inp.dataset.index=index;inp.maxLength=String(current.b*9).length;
-      inp.addEventListener('input',()=>{inp.value=inp.value.replace(/\D/g,'').slice(0,inp.maxLength);inp.classList.remove('good','bad');onEdit()});field.appendChild(inp);row.appendChild(field);
-    });
-    steps.appendChild(row);
-  });
-  work.appendChild(steps);host.appendChild(work);setTimeout(()=>q.querySelector('.answer')?.focus(),0)
+  const guide=document.createElement('div');guide.className='division-guide';guide.innerHTML='<b>Divide · multiplica · resta · baja la siguiente cifra</b><br>Completa la cuenta directamente en su posición.';work.appendChild(guide);
+  host.appendChild(work);setTimeout(()=>q.querySelector('.answer')?.focus(),0)
 }
 function focusLast(){const arr=[...document.querySelectorAll('#math .answer')];if(arr.length)arr[arr.length-1].focus()}
 
@@ -1074,8 +1096,8 @@ function grade(){
     });
   }else if(current.op==='div'){
     document.querySelectorAll('[data-type="divproduct"],[data-type="divremainder"]').forEach(inp=>{
-      const step=current.divisionSteps[+inp.dataset.index];
-      const exp=String(inp.dataset.type==='divproduct'?step.product:step.remainder);
+      const [stepIndex,digitIndex]=inp.dataset.index.split('-').map(Number),step=current.divisionSteps[stepIndex];
+      const exp=String(inp.dataset.type==='divproduct'?step.product:step.remainder)[digitIndex];
       const good=inp.value===exp;inp.classList.add(good?'good':'bad');if(!good)ok=false;
     });
   }else if(current.op==='sub'){
@@ -1137,8 +1159,8 @@ function fillSolution(){
     });
   }else if(current.op==='div'){
     document.querySelectorAll('[data-type="divproduct"],[data-type="divremainder"]').forEach(inp=>{
-      const step=current.divisionSteps[+inp.dataset.index];
-      inp.value=String(inp.dataset.type==='divproduct'?step.product:step.remainder);inp.classList.remove('bad');inp.classList.add('good');
+      const [stepIndex,digitIndex]=inp.dataset.index.split('-').map(Number),step=current.divisionSteps[stepIndex];
+      inp.value=String(inp.dataset.type==='divproduct'?step.product:step.remainder)[digitIndex];inp.classList.remove('bad');inp.classList.add('good');
     });
   }else if(current.op==='sub'){
     document.querySelectorAll('[data-type="borrow"]').forEach(inp=>{
@@ -1173,7 +1195,7 @@ function infoHtml(){
   if(selectedOp==='add')return '<p><b>Sumas:</b> escribe las llevadas en las casillas pequeñas de arriba y el resultado debajo de la línea.</p><p>Los números pueden tener distinta cantidad de cifras y se alinean por la derecha.</p>';
   if(selectedOp==='sub')return '<p><b>Restas:</b> si no puedes restar, escribe un <b>1 arriba</b> para añadir 10.</p><p>Ese 1 pasa a la columna de la izquierda: <b>súmalo al número de abajo y escribe su nuevo valor</b>. El número anterior se tacha automáticamente.</p>';
   if(selectedOp==='mul')return '<p><b>Multiplicaciones:</b> empieza por la cifra de la derecha y calcula cada cifra por separado. Por ejemplo, en 666 × 2, escribe 12, 12 y 12.</p><p>Las casillas se colocan escalonadas para mostrar su posición. Después escribe el resultado final debajo de la línea.</p>';
-  return '<p><b>Divisiones:</b> elige las cifras del dividendo y del divisor, y practica resultados enteros, decimales exactos o periódicos.</p><p>Escribe el cociente arriba. En cada paso calcula el <b>producto</b> y el <b>resto</b>. La línea morada sobre el cociente indica las cifras que se repiten.</p>';
+  return '<p><b>Divisiones:</b> elige las cifras del dividendo y del divisor, y practica resultados enteros, decimales exactos o periódicos.</p><p>Sigue el método tradicional: escribe una cifra del cociente, multiplica por el divisor, coloca el producto debajo, resta y baja la siguiente cifra. La línea morada indica las cifras periódicas.</p>';
 }
 function renderHistory(name){const hist=[...historyFor(name)].sort((a,b)=>new Date(b.date)-new Date(a.date));$('historyUser').textContent=name?`${name} · últimos ${RETENTION_DAYS} días`:'Selecciona un usuario';if(!name||!db.users[name]){$('stats').innerHTML='';$('historyList').innerHTML='<div class="empty">No hay un usuario seleccionado.</div>';$('clearHistory').style.display='none';return}$('clearHistory').style.display='inline-block';const total=hist.length,firstTry=hist.filter(x=>x.attempts?.length===1&&x.attempts[0].correct&&!x.solutionUsed).length,solutions=hist.filter(x=>x.solutionUsed).length;$('stats').innerHTML=`<div class="stat"><b>${total}</b><span>ejercicios</span></div><div class="stat"><b>${firstTry}</b><span>a la primera</span></div><div class="stat"><b>${solutions}</b><span>con respuesta</span></div>`;if(!hist.length){$('historyList').innerHTML='<div class="empty">Todavía no hay ejercicios guardados.</div>';return}$('historyList').innerHTML=hist.map(x=>{const dt=new Date(x.date),date=dt.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'})+' '+dt.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}),op=symbolOp(x.operation),tries=(x.attempts||[]).map((a,i)=>`<span class="tag ${a.correct?'oktag':'badtag'}">${i+1}: ${escapeHtml(a.answer)} ${a.correct?'✓':'✗'}</span>`).join(' '),sol=x.solutionUsed?'<span class="tag">vio respuesta</span>':'';return `<div class="history-item"><div class="history-top"><div><div class="expression">${x.operation==='add'&&x.operands?.length?x.operands.join(' + '):`${x.a} ${op} ${x.b}`} = ${x.result}</div><span class="tag">${labelOp(x.operation)}</span></div><div class="date">${date}</div></div><div class="attempts">${tries||'<span class="tag">sin correcciones</span>'} ${sol}</div></div>`}).join('')}
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
