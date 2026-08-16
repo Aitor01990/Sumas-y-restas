@@ -1,9 +1,9 @@
-const CACHE_NAME = 'matematicas-tradicionales-v17-7-beta';
+const CACHE_NAME = 'matematicas-tradicionales-v17-8-beta';
 const APP_FILES = [
   './',
   './index.html',
-  './styles.css?v=17.7',
-  './app.js?v=17.7',
+  './styles.css?v=17.8',
+  './app.js?v=17.8',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png'

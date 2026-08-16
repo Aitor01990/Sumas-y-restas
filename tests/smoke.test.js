@@ -50,14 +50,14 @@ test('objetivos por sesión diaria y semanal', () => {
 });
 
 test('la PWA mantiene los recursos esenciales', () => {
-  for (const file of ['./', './index.html', './styles.css?v=17.7', './app.js?v=17.7', './manifest.webmanifest', './icon-192.png', './icon-512.png']) {
+  for (const file of ['./', './index.html', './styles.css?v=17.8', './app.js?v=17.8', './manifest.webmanifest', './icon-192.png', './icon-512.png']) {
     assert.ok(sw.includes(`'${file}'`), `Falta ${file} en la caché`);
   }
 });
 
 test('HTML carga estilos y lógica separados', () => {
-  assert.match(html, /href="styles\.css\?v=17\.7"/);
-  assert.match(html, /src="app\.js\?v=17\.7"/);
+  assert.match(html, /href="styles\.css\?v=17\.8"/);
+  assert.match(html, /src="app\.js\?v=17\.8"/);
   assert.doesNotMatch(html, /<style>/);
 });
 
@@ -65,6 +65,17 @@ test('incluye apoyo voluntario externo sin compartir datos', () => {
   assert.match(html, /https:\/\/buymeacoffee\.com\/aitorcrea/);
   assert.match(html, /Seguirá siendo gratuita/);
   assert.match(html, /rel="noopener noreferrer"/);
+});
+
+test('protege el apoyo con una prueba independiente de cuatro aciertos', () => {
+  assert.match(html, /¿Utilizas realmente esta aplicación/);
+  assert.match(html, /supportResultScreen/);
+  assert.match(app, /sessionMode='supportExam'/);
+  assert.match(app, /correct===4/);
+  assert.match(app, /else record=null/);
+  assert.match(app, /digits:3,count:3,carry:'yes'/);
+  assert.match(app, /multiplicandDigits:2,multiplierDigits:1/);
+  assert.match(app, /dividendDigits:2,divisorDigits:1,resultType:'integer'/);
 });
 
 test('muestra el estado sin conexión y conserva actualización al volver', () => {
