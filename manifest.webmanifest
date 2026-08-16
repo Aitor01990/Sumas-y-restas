@@ -1,7 +1,7 @@
 {
   "name": "Matemáticas tradicionales",
   "short_name": "Matemáticas",
-  "description": "Práctica de matemáticas básicas con método tradicional, usuarios e historial.",
+  "description": "Matemáticas tradicionales: sumas con varios sumandos, restas, multiplicaciones y divisiones.",
   "lang": "es",
   "start_url": "./index.html",
   "scope": "./",
