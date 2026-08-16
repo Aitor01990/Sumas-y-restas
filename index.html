@@ -320,6 +320,8 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
 .division-top-digit,.division-fixed-digit{display:grid;place-items:center;font-size:34px;height:42px}.division-fixed-digit.decimal-zero{color:#475467}.division-minus{display:grid;place-items:center;font-size:25px}.division-work-input{width:38px;height:38px;padding:0;text-align:center;border:0;border-bottom:3px solid #98a2b3;border-radius:5px 5px 2px 2px;background:#fff;font-family:"Courier New",monospace;font-size:27px;font-weight:800}.division-work-input.good{border-bottom-color:var(--ok)!important}.division-work-input.bad{border-bottom-color:var(--bad)!important}.division-sub-rule{height:2px;background:#667085;align-self:end;margin-bottom:3px}.division-right-traditional{display:grid;grid-template-rows:auto auto;min-width:92px}.division-right-traditional .divisor{border-bottom:3px solid var(--text)}.division-guide{font-size:12px;color:var(--muted);text-align:center;line-height:1.4}.division-guide b{color:var(--text)}
 @media(max-width:560px){.division-left{grid-template-columns:repeat(var(--div-cols),36px);grid-auto-rows:38px;padding-right:7px}.division-top-digit,.division-fixed-digit{font-size:29px;height:38px}.division-work-input{width:33px;height:34px;font-size:24px}.division-right-traditional{min-width:82px}.division-traditional{justify-content:start}.division-work{overflow-x:auto;padding:2px}}
 .division-fixed-digit.decimal-zero{position:relative}.division-fixed-digit.decimal-zero[data-comma="true"]::before{content:",";position:absolute;left:-5px;bottom:2px}.division-minus{justify-self:start;transform:translateX(-17px);z-index:2}.division-hidden{visibility:hidden;pointer-events:none}.division-current{animation:divisionPulse 1.1s ease-in-out 2}@keyframes divisionPulse{50%{box-shadow:0 0 0 4px #dbeafe}}
+.history-calendar{margin:8px 0 15px}.calendar-head{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;margin-bottom:8px}.calendar-head b{text-align:center;text-transform:capitalize}.calendar-head button{width:36px;height:36px;border:1px solid var(--line);border-radius:50%;background:#fff;font-weight:900}.calendar-week,.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.calendar-week span{text-align:center;font-size:10px;font-weight:850;color:var(--muted);padding:3px}.calendar-day{aspect-ratio:1;border:1px solid transparent;border-radius:10px;background:#f8fafc;display:grid;place-items:center;position:relative;font-size:13px}.calendar-day.has-work{border-color:#93c5fd;background:#eff6ff;color:#1d4ed8;font-weight:900}.calendar-day.has-work::after{content:"✓";position:absolute;right:3px;bottom:1px;font-size:10px;color:var(--ok)}.calendar-day.selected{outline:2px solid var(--accent)}.calendar-day.empty{background:transparent}.history-day-title{font-weight:900;margin:4px 0 8px}.streak-note{text-align:center;color:#b45309;font-weight:900;margin:-4px 0 10px}
+.stats{grid-template-columns:repeat(4,1fr)}
 </style>
 </head>
 <body>
@@ -335,7 +337,7 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
 
     <div id="userList" class="user-list"></div>
     <button id="newUserBtn" class="new-user-button">+ Crear nuevo usuario</button>
-    <p class="app-version">Versión 15 beta</p>
+    <p class="app-version">Versión 15.1 beta</p>
 
     <div id="newUserRow" class="new-user-row">
       <input id="newUserName" type="text" maxlength="24" placeholder="Nombre">
@@ -405,7 +407,7 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
 </section>
 
 <section id="examResultScreen" class="screen">
-  <div class="page-head"><div class="ghost-space"></div><div class="page-head-title">Resultado del examen</div><div class="ghost-space"></div></div>
+  <div class="page-head"><div class="ghost-space"></div><div id="resultTitle" class="page-head-title">Resultado del examen</div><div class="ghost-space"></div></div>
   <div class="card exam-summary"><div id="examScore" class="exam-score"></div><div id="examReview" class="exam-review"></div><button id="finishExamBtn" class="difficulty-start">Volver a operaciones</button></div>
 </section>
 
@@ -431,7 +433,7 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
 </div>
 
 <div id="infoModal" class="modal" role="dialog" aria-modal="true"><div class="modal-card"><div class="modal-head"><h2>Cómo se hace</h2><button id="closeInfo" class="close">×</button></div><div id="infoText" class="info-text"></div></div></div>
-<div id="historyModal" class="modal" role="dialog" aria-modal="true"><div class="modal-card"><div class="modal-head"><h2>Historial</h2><button id="closeHistory" class="close">×</button></div><div id="historyUser" class="history-user"></div><div id="stats" class="stats"></div><div id="historyList" class="history-list"></div><div class="history-footer"><button id="clearHistory" class="danger">Borrar historial</button></div></div></div>
+<div id="historyModal" class="modal" role="dialog" aria-modal="true"><div class="modal-card"><div class="modal-head"><h2>Historial</h2><button id="closeHistory" class="close">×</button></div><div id="historyUser" class="history-user"></div><div id="stats" class="stats"></div><div id="streakNote" class="streak-note"></div><div id="historyCalendar" class="history-calendar"></div><div id="historyList" class="history-list"></div><div class="history-footer"><button id="clearHistory" class="danger">Borrar historial</button></div></div></div>
 <button id="installBtn" style="display:none"></button>
 <div id="updateBanner" class="update-banner"><span>Nueva versión disponible</span><button id="updateBtn">Actualizar</button></div>
 
@@ -452,7 +454,7 @@ let settingsState={
   div:{dividendDigits:2,divisorDigits:1,resultType:'integer'}
 };
 let current=null,record=null,completedThisSession=0,exerciseSolved=false,revealConfirm=false;
-let sessionMode='single',programMode='practice',programCounts={add:0,sub:0,mul:0,div:0},exerciseQueue=[],queueIndex=0,examResults=[];
+let sessionMode='single',programMode='practice',programCounts={add:0,sub:0,mul:0,div:0},exerciseQueue=[],queueIndex=0,examResults=[],practiceResults=[];
 
 function loadDB(){
   try{
@@ -732,7 +734,7 @@ function startProgram(){
   exerciseQueue=[];
   ['add','sub','mul','div'].forEach(op=>{for(let i=0;i<programCounts[op];i++)exerciseQueue.push({op,settings:JSON.parse(JSON.stringify(settingsState[op]))})});
   if(!exerciseQueue.length){$('startProgramBtn').textContent='Añade al menos un ejercicio';setTimeout(()=>$('startProgramBtn').textContent='Empezar',1800);return}
-  shuffled(exerciseQueue);queueIndex=0;examResults=[];completedThisSession=0;sessionMode=programMode;
+  shuffled(exerciseQueue);queueIndex=0;examResults=[];practiceResults=[];completedThisSession=0;sessionMode=programMode;
   showScreen('exerciseScreen');newExercise(exerciseQueue[0]);
 }
 
@@ -1179,12 +1181,19 @@ function submitExamExercise(){
 function advanceQueuedExercise(){
   queueIndex++;
   if(queueIndex<exerciseQueue.length){newExercise(exerciseQueue[queueIndex]);return}
-  if(sessionMode==='exam')showExamResults();else{sessionMode='single';showScreen('operationScreen');updateOperationStats()}
+  if(sessionMode==='exam')showExamResults();else showPracticeResults();
 }
 function showExamResults(){
   const correct=examResults.filter(x=>x.correct).length,total=examResults.length;
+  $('resultTitle').textContent='Resultado del examen';
   $('examScore').textContent=`${correct} / ${total}`;
   $('examReview').innerHTML=examResults.map((x,i)=>`<div class="exam-review-item ${x.correct?'ok':'fail'}">${i+1}. ${escapeHtml(x.expression)} · ${x.correct?'✓':`Tu respuesta: ${escapeHtml(x.answer)} ✗`}</div>`).join('');
+  showScreen('examResultScreen');
+}
+function showPracticeResults(){
+  $('resultTitle').textContent='Resumen de la práctica';
+  $('examScore').textContent=`${practiceResults.length} ejercicio${practiceResults.length===1?'':'s'}`;
+  $('examReview').innerHTML=practiceResults.map((x,i)=>`<div class="exam-review-item ${x.correct?'ok':x.solutionUsed?'':'fail'}"><div>${i+1}. ${escapeHtml(x.expression)}</div><small>Intentos: ${x.attempts} · ${x.correct?'Completado correctamente ✓':x.solutionUsed?'Completado con la respuesta':'Sin completar'}${x.solutionUsed?' · Usó Ver respuesta':' · Sin ver la respuesta'}</small></div>`).join('');
   showScreen('examResultScreen');
 }
 function grade(){
@@ -1316,7 +1325,12 @@ function fillSolution(){
   completedThisSession++;
   updateCounter();
 }
-function commitRecord(){if(!record||!currentUser)return;record.completedAt=new Date().toISOString();db.users[currentUser].history.push(record);saveDB();record=null}
+function commitRecord(){
+  if(!record||!currentUser)return;
+  record.completedAt=new Date().toISOString();
+  if(sessionMode==='practice')practiceResults.push({expression:record.operation==='add'&&record.operands?.length?`${record.operands.join(' + ')} = ${record.result}`:`${record.a} ${symbolOp(record.operation)} ${record.b} = ${record.result}`,attempts:record.attempts.length,correct:record.attempts.some(x=>x.correct),solutionUsed:record.solutionUsed});
+  db.users[currentUser].history.push(record);saveDB();record=null
+}
 function resetReveal(){revealConfirm=false;$('solutionBtn').textContent='Ver respuesta';$('solutionBtn').classList.remove('confirm')}
 function updateCounter(){$('counter').textContent=sessionMode==='single'?`Hechas: ${completedThisSession} · Total: ${totalDone(currentUser)}`:`Ejercicio ${queueIndex+1} de ${exerciseQueue.length}`}
 
@@ -1327,6 +1341,36 @@ function infoHtml(){
   return '<p><b>Divisiones:</b> elige las cifras del dividendo y del divisor, y practica resultados enteros, decimales exactos o periódicos.</p><p>Sigue el método tradicional: escribe una cifra del cociente, multiplica por el divisor, coloca el producto debajo, resta y baja la siguiente cifra. La línea morada indica las cifras periódicas.</p>';
 }
 function renderHistory(name){const hist=[...historyFor(name)].sort((a,b)=>new Date(b.date)-new Date(a.date));$('historyUser').textContent=name?`${name} · últimos ${RETENTION_DAYS} días`:'Selecciona un usuario';if(!name||!db.users[name]){$('stats').innerHTML='';$('historyList').innerHTML='<div class="empty">No hay un usuario seleccionado.</div>';$('clearHistory').style.display='none';return}$('clearHistory').style.display='inline-block';const total=hist.length,firstTry=hist.filter(x=>x.attempts?.length===1&&x.attempts[0].correct&&!x.solutionUsed).length,solutions=hist.filter(x=>x.solutionUsed).length;$('stats').innerHTML=`<div class="stat"><b>${total}</b><span>ejercicios</span></div><div class="stat"><b>${firstTry}</b><span>a la primera</span></div><div class="stat"><b>${solutions}</b><span>con respuesta</span></div>`;if(!hist.length){$('historyList').innerHTML='<div class="empty">Todavía no hay ejercicios guardados.</div>';return}$('historyList').innerHTML=hist.map(x=>{const dt=new Date(x.date),date=dt.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'})+' '+dt.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}),op=symbolOp(x.operation),tries=(x.attempts||[]).map((a,i)=>`<span class="tag ${a.correct?'oktag':'badtag'}">${i+1}: ${escapeHtml(a.answer)} ${a.correct?'✓':'✗'}</span>`).join(' '),sol=x.solutionUsed?'<span class="tag">vio respuesta</span>':'';return `<div class="history-item"><div class="history-top"><div><div class="expression">${x.operation==='add'&&x.operands?.length?x.operands.join(' + '):`${x.a} ${op} ${x.b}`} = ${x.result}</div><span class="tag">${labelOp(x.operation)}</span></div><div class="date">${date}</div></div><div class="attempts">${tries||'<span class="tag">sin correcciones</span>'} ${sol}</div></div>`}).join('')}
+let historyMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1),selectedHistoryDate='';
+function localDateKey(value){const d=new Date(value),y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return`${y}-${m}-${day}`}
+function historyExpression(x){return x.operation==='add'&&x.operands?.length?x.operands.join(' + '):`${x.a} ${symbolOp(x.operation)} ${x.b}`}
+function activityStreak(keys){
+  const active=new Set(keys),cursor=new Date();cursor.setHours(12,0,0,0);
+  if(!active.has(localDateKey(cursor)))cursor.setDate(cursor.getDate()-1);
+  let streak=0;while(active.has(localDateKey(cursor))){streak++;cursor.setDate(cursor.getDate()-1)}return streak
+}
+function renderCalendar(hist){
+  const active=new Set(hist.map(x=>localDateKey(x.date))),year=historyMonth.getFullYear(),month=historyMonth.getMonth(),first=(new Date(year,month,1).getDay()+6)%7,days=new Date(year,month+1,0).getDate();
+  let cells='<div class="calendar-week">'+['L','M','X','J','V','S','D'].map(x=>`<span>${x}</span>`).join('')+'</div><div class="calendar-grid">';
+  for(let i=0;i<first;i++)cells+='<span class="calendar-day empty"></span>';
+  for(let day=1;day<=days;day++){const key=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;cells+=`<button class="calendar-day ${active.has(key)?'has-work':''} ${selectedHistoryDate===key?'selected':''}" data-history-day="${key}">${day}</button>`}
+  cells+='</div>';
+  $('historyCalendar').innerHTML=`<div class="calendar-head"><button data-calendar-move="-1">‹</button><b>${historyMonth.toLocaleDateString('es-ES',{month:'long',year:'numeric'})}</b><button data-calendar-move="1">›</button></div>${cells}`;
+  $('historyCalendar').querySelectorAll('[data-calendar-move]').forEach(btn=>btn.onclick=()=>{historyMonth=new Date(year,month+(+btn.dataset.calendarMove),1);renderHistory(currentUser)});
+  $('historyCalendar').querySelectorAll('[data-history-day]').forEach(btn=>btn.onclick=()=>{selectedHistoryDate=btn.dataset.historyDay;renderHistory(currentUser)});
+}
+function renderHistory(name){
+  const hist=[...historyFor(name)].sort((a,b)=>new Date(b.date)-new Date(a.date));$('historyUser').textContent=name?`${name} · últimos ${RETENTION_DAYS} días`:'Selecciona un usuario';
+  if(!name||!db.users[name]){$('stats').innerHTML='';$('streakNote').textContent='';$('historyCalendar').innerHTML='';$('historyList').innerHTML='<div class="empty">No hay un usuario seleccionado.</div>';$('clearHistory').style.display='none';return}
+  $('clearHistory').style.display='inline-block';const total=hist.length,firstTry=hist.filter(x=>x.attempts?.length===1&&x.attempts[0].correct&&!x.solutionUsed).length,solutions=hist.filter(x=>x.solutionUsed).length,streak=activityStreak(hist.map(x=>localDateKey(x.date)));
+  $('stats').innerHTML=`<div class="stat"><b>${total}</b><span>ejercicios</span></div><div class="stat"><b>${firstTry}</b><span>a la primera</span></div><div class="stat"><b>${solutions}</b><span>con respuesta</span></div><div class="stat"><b>${streak}</b><span>días de racha</span></div>`;
+  $('streakNote').textContent=streak?`🔥 ${streak} día${streak===1?'':'s'} seguido${streak===1?'':'s'} practicando`:'Haz un ejercicio hoy para comenzar una racha';
+  if(!selectedHistoryDate)selectedHistoryDate=hist.length?localDateKey(hist[0].date):localDateKey(new Date());renderCalendar(hist);
+  const dayHist=hist.filter(x=>localDateKey(x.date)===selectedHistoryDate),dateLabel=new Date(`${selectedHistoryDate}T12:00:00`).toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+  if(!dayHist.length){$('historyList').innerHTML=`<div class="history-day-title">${dateLabel}</div><div class="empty">No se hicieron ejercicios este día.</div>`;return}
+  const counts=['add','sub','mul','div'].map(op=>{const n=dayHist.filter(x=>x.operation===op).length;return n?`<span class="tag">${labelOp(op)}: ${n}</span>`:''}).join('');
+  $('historyList').innerHTML=`<div class="history-day-title">${dateLabel}</div><div>${counts}</div>`+dayHist.map(x=>{const tries=(x.attempts||[]).map((a,i)=>`<span class="tag ${a.correct?'oktag':'badtag'}">${i+1}: ${escapeHtml(a.answer)} ${a.correct?'✓':'✗'}</span>`).join(' '),sol=x.solutionUsed?'<span class="tag">vio respuesta</span>':'';return`<div class="history-item"><div class="history-top"><div><div class="expression">${historyExpression(x)} = ${x.result}</div><span class="tag">${labelOp(x.operation)}</span></div></div><div class="attempts">${tries||'<span class="tag">sin correcciones</span>'} ${sol}</div></div>`}).join('');
+}
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
 $('backUsersBtn').onclick=()=>{showScreen('userScreen');renderUsers()};
@@ -1355,7 +1399,7 @@ $('solutionBtn').onclick=()=>{
 $('infoBtn').onclick=()=>{$('infoText').innerHTML=infoHtml();$('infoModal').classList.add('show')};
 $('closeInfo').onclick=()=>$('infoModal').classList.remove('show');
 $('infoModal').onclick=e=>{if(e.target===$('infoModal'))$('infoModal').classList.remove('show')};
-$('historyBtn').onclick=()=>{renderHistory(currentUser);$('historyModal').classList.add('show')};
+$('historyBtn').onclick=()=>{historyMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);selectedHistoryDate='';renderHistory(currentUser);$('historyModal').classList.add('show')};
 $('closeHistory').onclick=()=>$('historyModal').classList.remove('show');
 $('historyModal').onclick=e=>{if(e.target===$('historyModal'))$('historyModal').classList.remove('show')};
 $('clearHistory').onclick=()=>{
