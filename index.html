@@ -315,7 +315,7 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
 .division-left{display:grid;grid-template-columns:repeat(var(--div-cols),42px);grid-auto-rows:42px;justify-content:end;align-items:center;padding-right:10px;border-right:3px solid var(--text)}
 .division-top-digit,.division-fixed-digit{display:grid;place-items:center;font-size:34px;height:42px}.division-fixed-digit.decimal-zero{color:#475467}.division-minus{display:grid;place-items:center;font-size:25px}.division-work-input{width:38px;height:38px;padding:0;text-align:center;border:0;border-bottom:3px solid #98a2b3;border-radius:5px 5px 2px 2px;background:#fff;font-family:"Courier New",monospace;font-size:27px;font-weight:800}.division-work-input.good{border-bottom-color:var(--ok)!important}.division-work-input.bad{border-bottom-color:var(--bad)!important}.division-sub-rule{height:2px;background:#667085;align-self:end;margin-bottom:3px}.division-right-traditional{display:grid;grid-template-rows:auto auto;min-width:92px}.division-right-traditional .divisor{border-bottom:3px solid var(--text)}.division-guide{font-size:12px;color:var(--muted);text-align:center;line-height:1.4}.division-guide b{color:var(--text)}
 @media(max-width:560px){.division-left{grid-template-columns:repeat(var(--div-cols),36px);grid-auto-rows:38px;padding-right:7px}.division-top-digit,.division-fixed-digit{font-size:29px;height:38px}.division-work-input{width:33px;height:34px;font-size:24px}.division-right-traditional{min-width:82px}.division-traditional{justify-content:start}.division-work{overflow-x:auto;padding:2px}}
-.division-fixed-digit.decimal-zero{position:relative}.division-fixed-digit.decimal-zero[data-comma="true"]::before{content:",";position:absolute;left:-5px;bottom:2px}.division-minus{justify-self:start;transform:translateX(-17px);z-index:2}
+.division-fixed-digit.decimal-zero{position:relative}.division-fixed-digit.decimal-zero[data-comma="true"]::before{content:",";position:absolute;left:-5px;bottom:2px}.division-minus{justify-self:start;transform:translateX(-17px);z-index:2}.division-hidden{visibility:hidden;pointer-events:none}.division-current{animation:divisionPulse 1.1s ease-in-out 2}@keyframes divisionPulse{50%{box-shadow:0 0 0 4px #dbeafe}}
 </style>
 </head>
 <body>
@@ -331,7 +331,7 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
 
     <div id="userList" class="user-list"></div>
     <button id="newUserBtn" class="new-user-button">+ Crear nuevo usuario</button>
-    <p class="app-version">Versión 13.1 beta</p>
+    <p class="app-version">Versión 13.2 beta</p>
 
     <div id="newUserRow" class="new-user-row">
       <input id="newUserName" type="text" maxlength="24" placeholder="Nombre">
@@ -980,7 +980,7 @@ function renderMultiplication(host){
 }
 function divisionAnswerInput(index){
   const inp=document.createElement('input');inp.className='answer';inp.inputMode='numeric';inp.maxLength=1;inp.autocomplete='off';inp.dataset.type='answer';inp.dataset.index=index;
-  inp.addEventListener('input',()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);inp.classList.remove('good','bad');onEdit()});return inp
+  inp.dataset.step=index;inp.addEventListener('input',()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);inp.classList.remove('good','bad');onEdit();updateDivisionProgress()});return inp
 }
 function renderDivision(host){
   const work=document.createElement('div');work.className='division-work';
@@ -1011,28 +1011,61 @@ function renderDivision(host){
   right.append(divisor,q);
   current.divisionSteps.forEach((step,stepIndex)=>{
     const product=String(step.product),productRow=2+stepIndex*3,endColumn=step.column+1;
-    makeText(left,productRow,Math.max(1,endColumn-product.length),'−','division-minus');
+    const minus=makeText(left,productRow,Math.max(1,endColumn-product.length),'−','division-minus');minus.dataset.reveal='product';minus.dataset.step=stepIndex;
     product.split('').forEach((_,digitIndex)=>{
       const inp=document.createElement('input');inp.className='division-work-input';inp.inputMode='numeric';inp.maxLength=1;inp.autocomplete='off';inp.dataset.type='divproduct';inp.dataset.index=`${stepIndex}-${digitIndex}`;inp.style.gridRow=productRow;inp.style.gridColumn=endColumn-product.length+digitIndex+1;
-      inp.addEventListener('input',()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);inp.classList.remove('good','bad');onEdit()});left.appendChild(inp);
+      inp.dataset.step=stepIndex;inp.addEventListener('input',()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);inp.classList.remove('good','bad');onEdit();updateDivisionProgress()});left.appendChild(inp);
     });
-    const rule=document.createElement('div');rule.className='division-sub-rule';rule.style.gridRow=productRow+1;rule.style.gridColumn=`${Math.max(1,endColumn-product.length)} / ${endColumn+1}`;left.appendChild(rule);
+    const rule=document.createElement('div');rule.className='division-sub-rule';rule.dataset.reveal='product';rule.dataset.step=stepIndex;rule.style.gridRow=productRow+1;rule.style.gridColumn=`${Math.max(1,endColumn-product.length)} / ${endColumn+1}`;left.appendChild(rule);
     const remainder=String(step.remainder),remainderRow=productRow+2;
     remainder.split('').forEach((_,digitIndex)=>{
       const inp=document.createElement('input');inp.className='division-work-input';inp.inputMode='numeric';inp.maxLength=1;inp.autocomplete='off';inp.dataset.type='divremainder';inp.dataset.index=`${stepIndex}-${digitIndex}`;inp.style.gridRow=remainderRow;inp.style.gridColumn=Math.max(1,endColumn-remainder.length+digitIndex+1);
-      inp.addEventListener('input',()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);inp.classList.remove('good','bad');onEdit()});left.appendChild(inp);
+      inp.dataset.step=stepIndex;inp.addEventListener('input',()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);inp.classList.remove('good','bad');onEdit();updateDivisionProgress()});left.appendChild(inp);
     });
     const next=current.divisionSteps[stepIndex+1];
     if(next){
-      const lowered=String(next.partial).slice(-1);
-      makeText(left,remainderRow,next.column+1,lowered,'division-fixed-digit');
+      const lowered=String(next.partial).slice(-1),inp=document.createElement('input');
+      inp.className='division-work-input';inp.inputMode='numeric';inp.maxLength=1;inp.autocomplete='off';inp.dataset.type='divlower';inp.dataset.index=stepIndex;inp.dataset.step=stepIndex;inp.dataset.expected=lowered;inp.style.gridRow=remainderRow;inp.style.gridColumn=next.column+1;
+      inp.addEventListener('input',()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);inp.classList.remove('good','bad');onEdit();updateDivisionProgress()});left.appendChild(inp);
     }
   });
   board.append(left,right);work.appendChild(board);
   const names={integer:'entero exacto',terminating:'decimal exacto',pure:'periódico sencillo',mixed:'periódico mixto'};
   const note=document.createElement('div');note.className='division-note';note.textContent=`Resultado ${names[current.resultType]}.${current.division.repeat.length?' La línea morada marca el período.':''}`;work.appendChild(note);
   const guide=document.createElement('div');guide.className='division-guide';guide.innerHTML='<b>Divide · multiplica · resta · baja la siguiente cifra</b><br>Completa la cuenta directamente en su posición.';work.appendChild(guide);
-  host.appendChild(work);setTimeout(()=>q.querySelector('.answer')?.focus(),0)
+  host.appendChild(work);updateDivisionProgress();setTimeout(()=>q.querySelector('.answer:not(.division-hidden)')?.focus(),0)
+}
+function updateDivisionProgress(){
+  if(current?.op!=='div')return;
+  const all=[...document.querySelectorAll('#math [data-step],#math [data-reveal]')];
+  all.forEach(el=>el.classList.add('division-hidden'));
+  let nextFocus=null;
+  for(let stepIndex=0;stepIndex<current.divisionSteps.length;stepIndex++){
+    const q=document.querySelector(`#math [data-type="answer"][data-step="${stepIndex}"]`),expectedQ=current.answerDigits[stepIndex];
+    if(!q)break;
+    q.classList.remove('division-hidden');
+    if(q.value!==expectedQ){nextFocus=q;break}
+    q.classList.add('good');
+    const products=[...document.querySelectorAll(`#math [data-type="divproduct"][data-step="${stepIndex}"]`)];
+    document.querySelectorAll(`#math [data-reveal="product"][data-step="${stepIndex}"]`).forEach(el=>el.classList.remove('division-hidden'));
+    products.forEach(el=>el.classList.remove('division-hidden'));
+    const expectedProduct=String(current.divisionSteps[stepIndex].product);
+    if(!products.every((el,i)=>el.value===expectedProduct[i])){nextFocus=products.find((el,i)=>el.value!==expectedProduct[i]);break}
+    products.forEach(el=>el.classList.add('good'));
+    const remainders=[...document.querySelectorAll(`#math [data-type="divremainder"][data-step="${stepIndex}"]`)];
+    remainders.forEach(el=>el.classList.remove('division-hidden'));
+    const expectedRemainder=String(current.divisionSteps[stepIndex].remainder);
+    if(!remainders.every((el,i)=>el.value===expectedRemainder[i])){nextFocus=remainders.find((el,i)=>el.value!==expectedRemainder[i]);break}
+    remainders.forEach(el=>el.classList.add('good'));
+    const lower=document.querySelector(`#math [data-type="divlower"][data-step="${stepIndex}"]`);
+    if(lower){
+      lower.classList.remove('division-hidden');
+      if(lower.value!==lower.dataset.expected){nextFocus=lower;break}
+      lower.classList.add('good');
+    }
+  }
+  document.querySelectorAll('#math .division-current').forEach(el=>el.classList.remove('division-current'));
+  if(nextFocus)nextFocus.classList.add('division-current');
 }
 function focusLast(){const arr=[...document.querySelectorAll('#math .answer')];if(arr.length)arr[arr.length-1].focus()}
 
@@ -1073,6 +1106,7 @@ function grade(){
   document.querySelectorAll('#math input').forEach(x=>x.classList.remove('good','bad'));
 
   document.querySelectorAll('#math [data-type="answer"]').forEach(inp=>{
+    if(current.op==='div'&&inp.classList.contains('division-hidden')){ok=false;return}
     const exp=ans[+inp.dataset.index]??'';
     const good=inp.value===exp;
     inp.classList.add(good?'good':'bad');
@@ -1096,9 +1130,14 @@ function grade(){
     });
   }else if(current.op==='div'){
     document.querySelectorAll('[data-type="divproduct"],[data-type="divremainder"]').forEach(inp=>{
+      if(inp.classList.contains('division-hidden')){ok=false;return}
       const [stepIndex,digitIndex]=inp.dataset.index.split('-').map(Number),step=current.divisionSteps[stepIndex];
       const exp=String(inp.dataset.type==='divproduct'?step.product:step.remainder)[digitIndex];
       const good=inp.value===exp;inp.classList.add(good?'good':'bad');if(!good)ok=false;
+    });
+    document.querySelectorAll('[data-type="divlower"]').forEach(inp=>{
+      if(inp.classList.contains('division-hidden')){ok=false;return}
+      const good=inp.value===inp.dataset.expected;inp.classList.add(good?'good':'bad');if(!good)ok=false;
     });
   }else if(current.op==='sub'){
     document.querySelectorAll('[data-type="borrow"]').forEach(inp=>{
@@ -1162,6 +1201,9 @@ function fillSolution(){
       const [stepIndex,digitIndex]=inp.dataset.index.split('-').map(Number),step=current.divisionSteps[stepIndex];
       inp.value=String(inp.dataset.type==='divproduct'?step.product:step.remainder)[digitIndex];inp.classList.remove('bad');inp.classList.add('good');
     });
+    document.querySelectorAll('[data-type="divlower"]').forEach(inp=>{inp.value=inp.dataset.expected;inp.classList.remove('bad','division-hidden');inp.classList.add('good')});
+    document.querySelectorAll('[data-reveal="product"]').forEach(el=>el.classList.remove('division-hidden'));
+    updateDivisionProgress();
   }else if(current.op==='sub'){
     document.querySelectorAll('[data-type="borrow"]').forEach(inp=>{
       inp.value=current.borrowTop[+inp.dataset.index]?'1':'';
