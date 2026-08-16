@@ -25,10 +25,20 @@ test('multiplicaciones avanzan de forma progresiva', () => {
 });
 
 test('incluye práctica, examen, programas y objetivo diario', () => {
-  assert.match(html, /Programar ejercicios/);
+  assert.match(html, /Modo ejercicios/);
   assert.match(html, /Modo examen/);
   assert.match(html, /Programaciones guardadas/);
   assert.match(app, /Objetivo diario/);
+});
+
+test('V17 conserva ajustes por usuario y acceso adulto', () => {
+  assert.match(html, /parentGateModal/);
+  assert.match(html, /Bic/);
+  assert.match(app, /ensureUserConfig/);
+  assert.match(app, /programProfiles/);
+  assert.match(app, /startConfiguredProgram/);
+  assert.match(app, /toLowerCase\(\)!=='oli'/);
+  assert.match(app, /openParentGate\(\)\},2000/);
 });
 
 test('la PWA mantiene los recursos esenciales', () => {
