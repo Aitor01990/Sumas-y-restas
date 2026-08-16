@@ -147,6 +147,8 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
   font-size:11px;
   color:var(--muted);
 }
+.operation-choice.program-choice{grid-column:1/-1;min-height:92px;display:grid;grid-template-columns:58px 1fr;text-align:left;padding:12px 18px}.operation-choice.program-choice .big-symbol{grid-row:1/3}.operation-choice.program-choice .op-title,.operation-choice.program-choice .op-hint{justify-self:start}
+.program-list{display:grid;gap:10px}.program-block{border:1px solid #e4e7ec;border-radius:15px;padding:12px;background:#fff}.program-block h3{margin:0 0 9px;font-size:17px}.program-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.program-field{display:grid;gap:4px}.program-field span{font-size:11px;font-weight:850;color:var(--muted)}.program-field select{min-width:0;height:42px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:0 7px}.exam-summary{display:grid;gap:12px;text-align:center}.exam-score{font-size:44px;font-weight:950;color:var(--accent)}.exam-review{display:grid;gap:7px;text-align:left}.exam-review-item{padding:9px 11px;border-radius:11px;background:#f8fafc;border:1px solid #e4e7ec;font-family:"Courier New",monospace;font-weight:800}.exam-review-item.ok{border-color:#86efac;background:#f0fdf4}.exam-review-item.fail{border-color:#fca5a5;background:#fff7f7}
 .history-inline{
   width:40px;height:40px;
   border:1px solid var(--line);
@@ -225,6 +227,7 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
   .operation-choice .big-symbol{width:52px;height:52px;font-size:33px}
   .level-grid{gap:7px}
 }
+@media(max-width:420px){.program-fields{grid-template-columns:1fr 1fr}.operation-choice.program-choice{grid-template-columns:52px 1fr}}
 
 
 /* V12.1 - multiplicación alineada por columnas */
@@ -332,7 +335,7 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
 
     <div id="userList" class="user-list"></div>
     <button id="newUserBtn" class="new-user-button">+ Crear nuevo usuario</button>
-    <p class="app-version">Versión 14.1 beta</p>
+    <p class="app-version">Versión 15 beta</p>
 
     <div id="newUserRow" class="new-user-row">
       <input id="newUserName" type="text" maxlength="24" placeholder="Nombre">
@@ -363,8 +366,27 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
       <button class="operation-choice" data-op="div">
         <span class="big-symbol">÷</span><span class="op-title">Dividir</span><span class="op-hint">Divisiones exactas</span>
       </button>
+      <button class="operation-choice program-choice" data-program="practice">
+        <span class="big-symbol">▦</span><span class="op-title">Programar ejercicios</span><span class="op-hint">Mezcla operaciones con corrección y respuestas</span>
+      </button>
+      <button class="operation-choice program-choice" data-program="exam">
+        <span class="big-symbol">✓</span><span class="op-title">Modo examen</span><span class="op-hint">Sin corrección hasta terminar</span>
+      </button>
     </div>
     <div id="operationUserStats" class="selected-user-box"></div>
+  </div>
+</section>
+
+<!-- PROGRAMACIÓN DE SESIÓN -->
+<section id="programScreen" class="screen">
+  <div class="page-head">
+    <button id="backProgramBtn" class="icon-btn" aria-label="Operaciones">←</button>
+    <div class="page-head-title"><span id="programTitle">Programar ejercicios</span><span class="page-head-sub">Elige cantidades y configuración</span></div>
+    <div class="ghost-space"></div>
+  </div>
+  <div class="card">
+    <div id="programOptions" class="program-list"></div>
+    <button id="startProgramBtn" class="difficulty-start">Empezar</button>
   </div>
 </section>
 
@@ -380,6 +402,11 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
     <div id="difficultyOptions"></div>
     <button id="startBtn" class="difficulty-start">Empezar</button>
   </div>
+</section>
+
+<section id="examResultScreen" class="screen">
+  <div class="page-head"><div class="ghost-space"></div><div class="page-head-title">Resultado del examen</div><div class="ghost-space"></div></div>
+  <div class="card exam-summary"><div id="examScore" class="exam-score"></div><div id="examReview" class="exam-review"></div><button id="finishExamBtn" class="difficulty-start">Volver a operaciones</button></div>
 </section>
 
 <!-- 4. EJERCICIOS -->
@@ -425,6 +452,7 @@ let settingsState={
   div:{dividendDigits:2,divisorDigits:1,resultType:'integer'}
 };
 let current=null,record=null,completedThisSession=0,exerciseSolved=false,revealConfirm=false;
+let sessionMode='single',programMode='practice',programCounts={add:0,sub:0,mul:0,div:0},exerciseQueue=[],queueIndex=0,examResults=[];
 
 function loadDB(){
   try{
@@ -680,7 +708,36 @@ function renderDifficulty(){
   }
 }
 
+function selectOptions(values,current,labeler=v=>v){return values.map(v=>`<option value="${v}" ${String(v)===String(current)?'selected':''}>${labeler(v)}</option>`).join('')}
+function programField(label,key,options){return `<label class="program-field"><span>${label}</span><select data-program-key="${key}">${options}</select></label>`}
+function renderProgram(){
+  $('programTitle').textContent=programMode==='exam'?'Modo examen':'Programar ejercicios';
+  const qty=op=>programField('Cantidad',`${op}.quantity`,selectOptions([0,1,2,3,4,5,6,7,8,9,10,15,20],programCounts[op]));
+  $('programOptions').innerHTML=`
+    <div class="program-block"><h3>Sumas</h3><div class="program-fields">${qty('add')}${programField('Máximo de columnas','add.digits',selectOptions([2,3,4,5],settingsState.add.digits,v=>`${v} columnas`))}${programField('Líneas','add.count',selectOptions([2,3,4],settingsState.add.count,v=>`${v} líneas`))}${programField('Llevadas','add.carry',selectOptions(['yes','no'],settingsState.add.carry,v=>v==='yes'?'Con llevadas':'Sin llevadas'))}</div></div>
+    <div class="program-block"><h3>Restas</h3><div class="program-fields">${qty('sub')}${programField('Cifras','sub.digits',selectOptions([2,3,4,5],settingsState.sub.digits,v=>`${v} cifras`))}${programField('Llevadas','sub.carry',selectOptions(['yes','no'],settingsState.sub.carry,v=>v==='yes'?'Con llevadas':'Sin llevadas'))}</div></div>
+    <div class="program-block"><h3>Multiplicaciones</h3><div class="program-fields">${qty('mul')}${programField('Multiplicando','mul.multiplicandDigits',selectOptions([1,2,3,4],settingsState.mul.multiplicandDigits,v=>`${v} cifras`))}${programField('Multiplicador','mul.multiplierDigits',selectOptions([1,2,3],settingsState.mul.multiplierDigits,v=>`${v} cifras`))}</div></div>
+    <div class="program-block"><h3>Divisiones</h3><div class="program-fields">${qty('div')}${programField('Dividendo','div.dividendDigits',selectOptions([2,3,4],settingsState.div.dividendDigits,v=>`${v} cifras`))}${programField('Divisor','div.divisorDigits',selectOptions([1,2,3],settingsState.div.divisorDigits,v=>`${v} cifras`))}${programField('Resultado','div.resultType',selectOptions(['integer','terminating','pure','mixed'],settingsState.div.resultType,v=>({integer:'Entero exacto',terminating:'Decimal exacto',pure:'Periódico sencillo',mixed:'Periódico mixto'})[v]))}</div></div>`;
+  $('programOptions').querySelectorAll('[data-program-key]').forEach(select=>select.onchange=()=>{
+    const [op,key]=select.dataset.programKey.split('.'),numeric=!['carry','resultType'].includes(key),value=numeric?+select.value:select.value;
+    if(key==='quantity')programCounts[op]=value;else settingsState[op][key]=value;
+    if(op==='div'&&settingsState.div.resultType==='integer'&&settingsState.div.divisorDigits>=settingsState.div.dividendDigits)settingsState.div.divisorDigits=Math.max(1,settingsState.div.dividendDigits-1);
+    renderProgram();
+  });
+}
+
+function openProgram(mode){programMode=mode;renderProgram();showScreen('programScreen')}
+function shuffled(items){for(let i=items.length-1;i>0;i--){const j=rint(0,i);[items[i],items[j]]=[items[j],items[i]]}return items}
+function startProgram(){
+  exerciseQueue=[];
+  ['add','sub','mul','div'].forEach(op=>{for(let i=0;i<programCounts[op];i++)exerciseQueue.push({op,settings:JSON.parse(JSON.stringify(settingsState[op]))})});
+  if(!exerciseQueue.length){$('startProgramBtn').textContent='Añade al menos un ejercicio';setTimeout(()=>$('startProgramBtn').textContent='Empezar',1800);return}
+  shuffled(exerciseQueue);queueIndex=0;examResults=[];completedThisSession=0;sessionMode=programMode;
+  showScreen('exerciseScreen');newExercise(exerciseQueue[0]);
+}
+
 document.querySelectorAll('.operation-choice').forEach(b=>b.onclick=()=>chooseOperation(b.dataset.op));
+document.querySelectorAll('[data-program]').forEach(b=>b.onclick=()=>openProgram(b.dataset.program));
 
 function divisionExpansion(a,b){
   const integer=Math.floor(a/b);
@@ -743,8 +800,9 @@ function generateDivision(settings){
   return generateDivision({...settings,resultType:'terminating'});
 }
 
-function newExercise(){
-  const op=selectedOp;
+function newExercise(queueItem=null){
+  const op=queueItem?.op||selectedOp;
+  if(queueItem){selectedOp=op;settingsState[op]=JSON.parse(JSON.stringify(queueItem.settings))}
   let a,b,result,n,meta={},tries=0,operands=null;
 
   if(op==='add'){
@@ -793,17 +851,20 @@ function newExercise(){
     settings:JSON.parse(JSON.stringify(settingsState[op])),
     attempts:[],solutionUsed:false
   };
+  updateCounter();
   renderExercise();
 }
 function makeText(parent,row,col,text,cls='digit',id=''){const el=document.createElement('div');el.textContent=text;el.className=cls;el.style.gridRow=row;el.style.gridColumn=col;if(id)el.id=id;parent.appendChild(el);return el}
-function onEdit(){exerciseSolved=false;$('mainBtn').textContent='Corregir';$('solutionBtn').disabled=false;$('status').textContent='';$('status').className='status';resetReveal()}
+function onEdit(){exerciseSolved=false;$('mainBtn').textContent=sessionMode==='exam'?'Siguiente':'Corregir';$('solutionBtn').disabled=false;$('status').textContent='';$('status').className='status';resetReveal()}
 function makeInput(parent,row,col,type,index,enabled=true,maxLength=1){const input=document.createElement('input');input.className='small-input'+(maxLength===2?' two':'');input.inputMode='numeric';input.maxLength=maxLength;input.autocomplete='off';input.dataset.type=type;input.dataset.index=index;input.style.gridRow=row;input.style.gridColumn=col;if(!enabled)input.disabled=true;input.addEventListener('input',()=>{input.value=input.value.replace(/\D/g,'').slice(0,maxLength);input.classList.remove('good','bad');onEdit();if(type==='bottomreplacement'){const original=$('bottom-'+index);if(original)original.classList.toggle('changed',input.value!=='')}});parent.appendChild(input);return input}
 function makeAnswer(parent,row,col,index){const input=document.createElement('input');input.className='answer';input.inputMode='numeric';input.maxLength=1;input.autocomplete='off';input.dataset.type='answer';input.dataset.index=index;input.style.gridRow=row;input.style.gridColumn=col;input.addEventListener('input',()=>{input.value=input.value.replace(/\D/g,'').slice(-1);input.classList.remove('good','bad');onEdit()});parent.appendChild(input);return input}
 function renderExercise(){
   exerciseSolved=false;
   resetReveal();
-  $('solutionBtn').disabled=false;
-  $('mainBtn').textContent='Corregir';
+  const exam=sessionMode==='exam';
+  $('solutionBtn').disabled=false;$('solutionBtn').style.display=exam?'none':'';
+  document.querySelector('#exerciseScreen .actions').style.gridTemplateColumns=exam?'1fr':'';
+  $('mainBtn').textContent=exam?'Siguiente':'Corregir';
   $('status').textContent='';
   $('status').className='status';
   $('exerciseLabel').textContent=labelOp(current.op);
@@ -1030,6 +1091,7 @@ function renderDivision(host){
 function updateDivisionProgress(){
   if(current?.op!=='div')return;
   const all=[...document.querySelectorAll('#math [data-step],#math [data-reveal]')];
+  if(sessionMode==='exam'){all.forEach(el=>el.classList.remove('division-hidden','division-current','good','bad'));return}
   all.forEach(el=>el.classList.add('division-hidden'));
   let nextFocus=null;
   for(let stepIndex=0;stepIndex<current.divisionSteps.length;stepIndex++){
@@ -1092,6 +1154,39 @@ function enteredAnswer(){
   return s||'—';
 }
 function snapshotWork(){const values={};document.querySelectorAll('#math input').forEach(inp=>values[`${inp.dataset.type}:${inp.dataset.index}`]=inp.value);return values}
+function isCurrentCorrect(){
+  const ans=expectedMap();
+  if([...document.querySelectorAll('#math [data-type="answer"]')].some(inp=>inp.value!==(ans[+inp.dataset.index]??'')))return false;
+  if(current.op==='add'&&[...document.querySelectorAll('[data-type="addcarry"]')].some(inp=>!inp.disabled&&!(inp.value===(current.carries[+inp.dataset.index]?String(current.carries[+inp.dataset.index]):'')||(!current.carries[+inp.dataset.index]&&inp.value==='0'))))return false;
+  if(current.op==='mul'&&[...document.querySelectorAll('[data-type="mulstep"]')].some(inp=>inp.value!==String(current.stepProducts[+inp.dataset.step]).padStart(2,' ')[+inp.dataset.digit].trim()))return false;
+  if(current.op==='sub'){
+    if([...document.querySelectorAll('[data-type="borrow"]')].some(inp=>{const exp=current.borrowTop[+inp.dataset.index]?'1':'';return inp.value!==exp&&!(exp===''&&inp.value==='0')}))return false;
+    if([...document.querySelectorAll('[data-type="bottomreplacement"]')].some(inp=>{const repl=current.bottomReplacement[+inp.dataset.index],exp=repl===null?'':String(repl);return inp.value!==exp&&!(exp===''&&inp.value==='0')}))return false;
+  }
+  if(current.op==='div'){
+    if([...document.querySelectorAll('[data-type="divproduct"],[data-type="divremainder"]')].some(inp=>{const [si,di]=inp.dataset.index.split('-').map(Number),step=current.divisionSteps[si];return inp.value!==String(inp.dataset.type==='divproduct'?step.product:step.remainder)[di]}))return false;
+    if([...document.querySelectorAll('[data-type="divlower"]')].some(inp=>inp.value!==inp.dataset.expected))return false;
+  }
+  return true;
+}
+function expressionCurrent(){return current.op==='add'?`${current.operands.join(' + ')} = ${current.result}`:`${current.a} ${symbolOp(current.op)} ${current.b} = ${current.result}`}
+function submitExamExercise(){
+  const correct=isCurrentCorrect(),answer=enteredAnswer(),expression=expressionCurrent();
+  record.attempts.push({at:new Date().toISOString(),answer,correct,work:snapshotWork()});commitRecord();
+  examResults.push({correct,answer,expression,operation:current.op});completedThisSession++;
+  advanceQueuedExercise();
+}
+function advanceQueuedExercise(){
+  queueIndex++;
+  if(queueIndex<exerciseQueue.length){newExercise(exerciseQueue[queueIndex]);return}
+  if(sessionMode==='exam')showExamResults();else{sessionMode='single';showScreen('operationScreen');updateOperationStats()}
+}
+function showExamResults(){
+  const correct=examResults.filter(x=>x.correct).length,total=examResults.length;
+  $('examScore').textContent=`${correct} / ${total}`;
+  $('examReview').innerHTML=examResults.map((x,i)=>`<div class="exam-review-item ${x.correct?'ok':'fail'}">${i+1}. ${escapeHtml(x.expression)} · ${x.correct?'✓':`Tu respuesta: ${escapeHtml(x.answer)} ✗`}</div>`).join('');
+  showScreen('examResultScreen');
+}
 function grade(){
   let ok=true;
   const ans=expectedMap();
@@ -1223,7 +1318,7 @@ function fillSolution(){
 }
 function commitRecord(){if(!record||!currentUser)return;record.completedAt=new Date().toISOString();db.users[currentUser].history.push(record);saveDB();record=null}
 function resetReveal(){revealConfirm=false;$('solutionBtn').textContent='Ver respuesta';$('solutionBtn').classList.remove('confirm')}
-function updateCounter(){$('counter').textContent=`Hechas: ${completedThisSession} · Total: ${totalDone(currentUser)}`}
+function updateCounter(){$('counter').textContent=sessionMode==='single'?`Hechas: ${completedThisSession} · Total: ${totalDone(currentUser)}`:`Ejercicio ${queueIndex+1} de ${exerciseQueue.length}`}
 
 function infoHtml(){
   if(selectedOp==='add')return '<p><b>Sumas:</b> escribe las llevadas en las casillas pequeñas de arriba y el resultado debajo de la línea.</p><p>Los números pueden tener distinta cantidad de cifras y se alinean por la derecha.</p>';
@@ -1236,15 +1331,19 @@ function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':
 
 $('backUsersBtn').onclick=()=>{showScreen('userScreen');renderUsers()};
 $('backOperationsBtn').onclick=()=>{showScreen('operationScreen');updateOperationStats()};
+$('backProgramBtn').onclick=()=>{showScreen('operationScreen');updateOperationStats()};
+$('startProgramBtn').onclick=startProgram;
 $('startBtn').onclick=()=>{
   if(!currentUser||!db.users[currentUser])return showScreen('userScreen');
+  sessionMode='single';exerciseQueue=[];queueIndex=0;
   completedThisSession=0;
   updateCounter();
   showScreen('exerciseScreen');
   newExercise();
 };
-$('backBtn').onclick=()=>{showScreen('difficultyScreen');renderDifficulty()};
-$('mainBtn').onclick=()=>exerciseSolved?newExercise():grade();
+$('backBtn').onclick=()=>{if(sessionMode==='single'){showScreen('difficultyScreen');renderDifficulty()}else{showScreen('programScreen');renderProgram()}};
+$('mainBtn').onclick=()=>{if(sessionMode==='exam')return submitExamExercise();if(exerciseSolved)return sessionMode==='practice'?advanceQueuedExercise():newExercise();grade()};
+$('finishExamBtn').onclick=()=>{sessionMode='single';showScreen('operationScreen');updateOperationStats()};
 $('solutionBtn').onclick=()=>{
   if(!revealConfirm){
     revealConfirm=true;
