@@ -338,7 +338,7 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
 
     <div id="userList" class="user-list"></div>
     <button id="newUserBtn" class="new-user-button">+ Crear nuevo usuario</button>
-    <p class="app-version">Versión 15.2 beta</p>
+    <p class="app-version">Versión 15.3 beta</p>
 
     <div id="newUserRow" class="new-user-row">
       <input id="newUserName" type="text" maxlength="24" placeholder="Nombre">
@@ -997,36 +997,21 @@ function renderMultiplication(host){
     paper.appendChild(row);
   });
 
-  const rule=document.createElement('div');
-  rule.className='mul-rule';
-  paper.appendChild(rule);
-
-  const final=document.createElement('div');
-  final.className='mul-final';
-  final.style.setProperty('--mul-columns',columns);
-  const rs=String(current.result);
-  const len=rs.length;
-  for(let i=0;i<len;i++){
-    const inp=document.createElement('input');
-    inp.className='answer';
-    inp.inputMode='numeric';
-    inp.maxLength=1;
-    inp.autocomplete='off';
-    inp.dataset.type='answer';
-    inp.dataset.index=i;
-    inp.style.gridColumn=String(2+columns-len+i);
-    inp.addEventListener('input',()=>{
-      inp.value=inp.value.replace(/\D/g,'').slice(-1);
-      inp.classList.remove('good','bad');
-      onEdit();
-    });
-    final.appendChild(inp);
+  const singleProduct=current.mulSteps.length===1;
+  if(!singleProduct){
+    const rule=document.createElement('div');rule.className='mul-rule';paper.appendChild(rule);
+    const final=document.createElement('div');final.className='mul-final';final.style.setProperty('--mul-columns',columns);
+    const rs=String(current.result),len=rs.length;
+    for(let i=0;i<len;i++){
+      const inp=document.createElement('input');inp.className='answer';inp.inputMode='numeric';inp.maxLength=1;inp.autocomplete='off';inp.dataset.type='answer';inp.dataset.index=i;inp.style.gridColumn=String(2+columns-len+i);
+      inp.addEventListener('input',()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);inp.classList.remove('good','bad');onEdit()});final.appendChild(inp);
+    }
+    paper.appendChild(final);
   }
-  paper.appendChild(final);
 
   const note=document.createElement('div');
   note.className='mul-order-note';
-  note.textContent='Empieza por la cifra de la derecha del multiplicador';
+  note.textContent=singleProduct?'Escribe directamente el producto':'Empieza por la cifra de la derecha del multiplicador';
   wrap.appendChild(note);
   setTimeout(()=>paper.querySelector('[data-type="mulstep"]')?.focus(),0);
 }
@@ -1142,6 +1127,7 @@ function expectedMap(){
 function enteredAnswer(){
   const inputs=[...document.querySelectorAll('#math [data-type="answer"]')];
   if(current.op==='div'||current.op==='mul'){
+    if(current.op==='mul'&&!inputs.length)return[...document.querySelectorAll('#math [data-type="mulstep"]')].sort((a,b)=>+a.dataset.digit-+b.dataset.digit).map(x=>x.value).join('')||'—';
     return inputs.sort((a,b)=>+a.dataset.index-+b.dataset.index).map(x=>x.value).join('')||'—';
   }
   const extra=inputs.find(x=>+x.dataset.index===-1);
