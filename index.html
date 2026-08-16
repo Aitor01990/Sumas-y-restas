@@ -226,7 +226,7 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
 }
 
 
-/* V11 - suma con varios sumandos y multiplicación visual escalonada */
+/* V12.1 - multiplicación alineada por columnas */
 .mul-process{
   width:min(420px,100%);
   display:grid;
@@ -245,23 +245,19 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
   font-variant-numeric:tabular-nums;
 }
 .mul-number{
-  grid-column:2/-1;
-  text-align:right;
+  display:grid;
+  place-items:center;
   font-size:39px;
   line-height:1.12;
-  padding-right:5px;
+  min-height:44px;
 }
 .mul-multiplier{
-  grid-column:1/-1;
-  display:flex;
-  justify-content:flex-end;
-  align-items:center;
-  gap:12px;
+  display:grid;
+  place-items:center;
   font-size:39px;
   line-height:1.12;
-  padding-right:5px;
 }
-.mul-multiplier .mul-sign{font-size:30px}
+.mul-sign{font-size:30px}
 .mul-rule{
   grid-column:1/-1;
   height:3px;
@@ -270,9 +266,9 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
   margin:3px 0 8px;
 }
 .mul-step-input{
-  width:70px;
+  width:calc(var(--mul-cell) - 4px);
   height:45px;
-  justify-self:end;
+  justify-self:center;
   border:2px solid #98a2b3;
   border-radius:10px;
   text-align:center;
@@ -282,20 +278,19 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
 }
 .mul-step-row{
   grid-column:1/-1;
-  display:flex;
-  justify-content:flex-end;
-  padding-right:calc(var(--step) * var(--mul-cell));
+  display:grid;
+  grid-template-columns:28px repeat(var(--mul-columns),var(--mul-cell));
 }
 .mul-final{
   grid-column:1/-1;
-  display:flex;
-  justify-content:flex-end;
-  gap:3px;
+  display:grid;
+  grid-template-columns:28px repeat(var(--mul-columns),var(--mul-cell));
 }
 .mul-final .answer{
-  width:42px;
+  width:calc(var(--mul-cell) - 4px);
   height:48px;
   font-size:29px;
+  justify-self:center;
 }
 .mul-order-note{
   color:var(--muted);
@@ -329,7 +324,7 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
 
     <div id="userList" class="user-list"></div>
     <button id="newUserBtn" class="new-user-button">+ Crear nuevo usuario</button>
-    <p class="app-version">Versión 12</p>
+    <p class="app-version">Versión 12.1 beta</p>
 
     <div id="newUserRow" class="new-user-row">
       <input id="newUserName" type="text" maxlength="24" placeholder="Nombre">
@@ -819,17 +814,30 @@ function renderMultiplication(host){
 
   const paper=document.createElement('div');
   paper.className='mul-paper';
-  paper.style.setProperty('--mul-columns',Math.max(current.n+1,String(current.result).length));
+  const columns=Math.max(current.n+1,String(current.result).length);
+  paper.style.setProperty('--mul-columns',columns);
   wrap.appendChild(paper);
 
-  const top=document.createElement('div');
-  top.className='mul-number';
-  top.textContent=current.a;
-  paper.appendChild(top);
+  String(current.a).split('').forEach((digit,i)=>{
+    const cell=document.createElement('div');
+    cell.className='mul-number';
+    cell.textContent=digit;
+    cell.style.gridColumn=String(2+columns-current.n+i);
+    paper.appendChild(cell);
+  });
+
+  const sign=document.createElement('div');
+  sign.className='mul-sign';
+  sign.textContent='×';
+  sign.style.gridColumn='1';
+  sign.style.gridRow='2';
+  paper.appendChild(sign);
 
   const multiplier=document.createElement('div');
   multiplier.className='mul-multiplier';
-  multiplier.innerHTML=`<span class="mul-sign">×</span><span>${current.b}</span>`;
+  multiplier.textContent=current.b;
+  multiplier.style.gridColumn=String(columns+1);
+  multiplier.style.gridRow='2';
   paper.appendChild(multiplier);
 
   const topRule=document.createElement('div');
@@ -840,22 +848,30 @@ function renderMultiplication(host){
     const row=document.createElement('div');
     row.className='mul-step-row';
     row.style.setProperty('--step',i);
+    row.style.setProperty('--mul-columns',columns);
 
-    const inp=document.createElement('input');
-    inp.className='mul-step-input';
-    inp.inputMode='numeric';
-    inp.maxLength=2;
-    inp.autocomplete='off';
-    inp.dataset.type='mulstep';
-    inp.dataset.index=i;
-    inp.setAttribute('aria-label',`${digit} por ${current.b}`);
-    inp.title=`${digit} × ${current.b}`;
-    inp.addEventListener('input',()=>{
-      inp.value=inp.value.replace(/\D/g,'').slice(0,2);
-      inp.classList.remove('good','bad');
-      onEdit();
+    const product=String(current.stepProducts[i]);
+    const startColumn=columns+2-i-product.length;
+    product.split('').forEach((_,digitIndex)=>{
+      const inp=document.createElement('input');
+      inp.className='mul-step-input';
+      inp.inputMode='numeric';
+      inp.maxLength=1;
+      inp.autocomplete='off';
+      inp.dataset.type='mulstep';
+      inp.dataset.step=i;
+      inp.dataset.digit=digitIndex;
+      inp.dataset.index=`${i}:${digitIndex}`;
+      inp.setAttribute('aria-label',`${digit} por ${current.b}, cifra ${digitIndex+1}`);
+      inp.title=`${digit} × ${current.b}`;
+      inp.style.gridColumn=String(startColumn+digitIndex);
+      inp.addEventListener('input',()=>{
+        inp.value=inp.value.replace(/\D/g,'').slice(-1);
+        inp.classList.remove('good','bad');
+        onEdit();
+      });
+      row.appendChild(inp);
     });
-    row.appendChild(inp);
     paper.appendChild(row);
   });
 
@@ -865,6 +881,7 @@ function renderMultiplication(host){
 
   const final=document.createElement('div');
   final.className='mul-final';
+  final.style.setProperty('--mul-columns',columns);
   const rs=String(current.result);
   const len=rs.length;
   for(let i=0;i<len;i++){
@@ -875,6 +892,7 @@ function renderMultiplication(host){
     inp.autocomplete='off';
     inp.dataset.type='answer';
     inp.dataset.index=i;
+    inp.style.gridColumn=String(2+columns-len+i);
     inp.addEventListener('input',()=>{
       inp.value=inp.value.replace(/\D/g,'').slice(-1);
       inp.classList.remove('good','bad');
@@ -946,7 +964,7 @@ function grade(){
     });
   }else if(current.op==='mul'){
     document.querySelectorAll('[data-type="mulstep"]').forEach(inp=>{
-      const exp=String(current.stepProducts[+inp.dataset.index]);
+      const exp=String(current.stepProducts[+inp.dataset.step])[+inp.dataset.digit];
       const good=inp.value===exp;
       inp.classList.add(good?'good':'bad');
       if(!good)ok=false;
@@ -1004,7 +1022,7 @@ function fillSolution(){
     });
   }else if(current.op==='mul'){
     document.querySelectorAll('[data-type="mulstep"]').forEach(inp=>{
-      inp.value=String(current.stepProducts[+inp.dataset.index]);
+      inp.value=String(current.stepProducts[+inp.dataset.step])[+inp.dataset.digit];
       inp.classList.remove('bad');
       inp.classList.add('good');
     });
