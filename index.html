@@ -266,7 +266,7 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
   margin:3px 0 8px;
 }
 .mul-step-input{
-  width:calc(var(--mul-cell) * 2 - 6px);
+  width:calc(var(--mul-cell) - 4px);
   height:45px;
   justify-self:center;
   border:2px solid #98a2b3;
@@ -324,7 +324,7 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
 
     <div id="userList" class="user-list"></div>
     <button id="newUserBtn" class="new-user-button">+ Crear nuevo usuario</button>
-    <p class="app-version">Versión 12.1</p>
+    <p class="app-version">Versión 12.1 beta</p>
 
     <div id="newUserRow" class="new-user-row">
       <input id="newUserName" type="text" maxlength="24" placeholder="Nombre">
@@ -850,23 +850,28 @@ function renderMultiplication(host){
     row.style.setProperty('--step',i);
     row.style.setProperty('--mul-columns',columns);
 
-    const inp=document.createElement('input');
-    inp.className='mul-step-input';
-    inp.inputMode='numeric';
-    inp.maxLength=2;
-    inp.autocomplete='off';
-    inp.dataset.type='mulstep';
-    inp.dataset.index=i;
-    inp.setAttribute('aria-label',`${digit} por ${current.b}`);
-    inp.title=`${digit} × ${current.b}`;
-    inp.style.gridColumnStart='span 2';
-    inp.style.gridColumnEnd=String(columns+2-i);
-    inp.addEventListener('input',()=>{
-      inp.value=inp.value.replace(/\D/g,'').slice(0,2);
-      inp.classList.remove('good','bad');
-      onEdit();
+    const product=String(current.stepProducts[i]);
+    const startColumn=columns+2-i-product.length;
+    product.split('').forEach((_,digitIndex)=>{
+      const inp=document.createElement('input');
+      inp.className='mul-step-input';
+      inp.inputMode='numeric';
+      inp.maxLength=1;
+      inp.autocomplete='off';
+      inp.dataset.type='mulstep';
+      inp.dataset.step=i;
+      inp.dataset.digit=digitIndex;
+      inp.dataset.index=`${i}:${digitIndex}`;
+      inp.setAttribute('aria-label',`${digit} por ${current.b}, cifra ${digitIndex+1}`);
+      inp.title=`${digit} × ${current.b}`;
+      inp.style.gridColumn=String(startColumn+digitIndex);
+      inp.addEventListener('input',()=>{
+        inp.value=inp.value.replace(/\D/g,'').slice(-1);
+        inp.classList.remove('good','bad');
+        onEdit();
+      });
+      row.appendChild(inp);
     });
-    row.appendChild(inp);
     paper.appendChild(row);
   });
 
@@ -959,7 +964,7 @@ function grade(){
     });
   }else if(current.op==='mul'){
     document.querySelectorAll('[data-type="mulstep"]').forEach(inp=>{
-      const exp=String(current.stepProducts[+inp.dataset.index]);
+      const exp=String(current.stepProducts[+inp.dataset.step])[+inp.dataset.digit];
       const good=inp.value===exp;
       inp.classList.add(good?'good':'bad');
       if(!good)ok=false;
@@ -1017,7 +1022,7 @@ function fillSolution(){
     });
   }else if(current.op==='mul'){
     document.querySelectorAll('[data-type="mulstep"]').forEach(inp=>{
-      inp.value=String(current.stepProducts[+inp.dataset.index]);
+      inp.value=String(current.stepProducts[+inp.dataset.step])[+inp.dataset.digit];
       inp.classList.remove('bad');
       inp.classList.add('good');
     });
