@@ -7,1110 +7,149 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Sumas y restas">
+<meta name="apple-mobile-web-app-title" content="Matemáticas">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>Sumas y restas</title>
+<title>Matemáticas tradicionales</title>
 <style>
-:root{
-  --bg:#f4f6fa;
-  --card:#fff;
-  --text:#172033;
-  --muted:#667085;
-  --line:#d0d5dd;
-  --accent:#2563eb;
-  --ok:#16803c;
-  --bad:#b42318;
-  --warn:#92400e;
-}
+:root{--bg:#f3f6fb;--card:#fff;--text:#172033;--muted:#667085;--line:#d0d5dd;--accent:#2563eb;--accentSoft:#eff6ff;--ok:#16803c;--bad:#b42318;--warn:#92400e}
 *{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-  background:var(--bg);
-  color:var(--text);
-}
-button,select,input{font:inherit}
-button{cursor:pointer}
-.app{
-  width:min(720px,100%);
-  min-height:100vh;
-  margin:0 auto;
-  padding:12px;
-}
-.screen{display:none}
-.screen.active{display:block}
-.card{
-  background:var(--card);
-  border-radius:22px;
-  padding:20px;
-  box-shadow:0 10px 34px rgba(16,24,40,.08);
-}
-.setup-card{margin-top:3vh}
-h1{margin:0 0 4px;font-size:clamp(28px,7vw,40px)}
-.subtitle{margin:0 0 18px;color:var(--muted)}
-.setup-grid{display:grid;gap:14px}
-label{display:grid;gap:6px;font-weight:780}
-select,input[type="text"]{
-  width:100%;
-  min-height:52px;
-  border:1px solid var(--line);
-  border-radius:14px;
-  padding:0 14px;
-  background:#fff;
-  color:var(--text);
-  font-size:18px;
-}
-.user-row{
-  display:grid;
-  grid-template-columns:1fr auto;
-  gap:8px;
-  align-items:end;
-}
-.small-btn{
-  min-height:52px;
-  padding:0 14px;
-  border:1px solid var(--line);
-  border-radius:14px;
-  background:#fff;
-  font-weight:800;
-}
-.setup-actions{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-  margin-top:18px;
-}
-.setup-actions button{
-  min-height:54px;
-  border-radius:14px;
-  font-weight:850;
-  font-size:17px;
-}
-.start{
-  border:0;
-  background:var(--accent);
-  color:#fff;
-}
-.history-btn{
-  border:1px solid var(--line);
-  background:#fff;
-  color:var(--text);
-}
-.install-app-btn{
-  width:100%;
-  min-height:48px;
-  margin-top:10px;
-  border:1px solid #bfdbfe;
-  border-radius:14px;
-  background:#eff6ff;
-  color:#1d4ed8;
-  font-weight:850;
-  font-size:16px;
-}
-.user-summary{
-  margin-top:12px;
-  min-height:22px;
-  color:var(--muted);
-  font-size:14px;
-}
-
-/* EXERCISE */
-.topbar{
-  height:52px;
-  display:grid;
-  grid-template-columns:48px 1fr 48px;
-  align-items:center;
-  margin-bottom:8px;
-}
-.icon-btn{
-  width:42px;height:42px;
-  border:1px solid var(--line);
-  border-radius:50%;
-  background:#fff;
-  color:var(--text);
-  font-size:22px;
-  font-weight:850;
-  display:grid;
-  place-items:center;
-  padding:0;
-}
-.counter{text-align:center;font-weight:850;font-size:17px}
-.exercise-card{
-  padding:18px 12px 16px;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-}
-.math-wrap{
-  width:100%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:10px 0 6px;
-}
-.math{
-  --cell:58px;
-  display:grid;
-  grid-template-columns:38px repeat(var(--digits),var(--cell));
-  grid-auto-rows:auto;
-  justify-content:center;
-  align-items:end;
-  font-variant-numeric:tabular-nums;
-  user-select:none;
-}
-.small-input{
-  width:36px;height:31px;
-  padding:0;
-  text-align:center;
-  border:1.5px dashed #98a2b3;
-  border-radius:8px;
-  background:#fafafa;
-  font-weight:850;
-  font-size:18px;
-  color:#7c3aed;
-}
-.small-input.two{width:43px}
-.small-input:disabled{opacity:.18}
-.digit{
-  height:60px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-family:"Courier New",monospace;
-  font-size:46px;
-  font-weight:700;
-  position:relative;
-}
-.digit.changed{color:#98a2b3}
-.digit.changed::after{
-  content:"";
-  position:absolute;
-  left:13%;right:13%;top:50%;
-  height:3px;
-  background:#667085;
-  transform:rotate(-10deg);
-  border-radius:4px;
-}
-.op{
-  align-self:center;
-  justify-self:center;
-  font-size:34px;
-  font-weight:850;
-}
-.rule{
-  grid-column:1/-1;
-  height:3px;
-  background:var(--text);
-  border-radius:3px;
-  margin:3px 0 9px;
-}
-.answer{
-  width:48px;height:54px;
-  padding:0;
-  text-align:center;
-  border:2px solid #98a2b3;
-  border-radius:10px;
-  font-family:"Courier New",monospace;
-  font-size:35px;
-  font-weight:750;
-}
-.good{border-color:var(--ok)!important;background:#ecfdf3!important}
-.bad{border-color:var(--bad)!important;background:#fff1f0!important}
-.status{
-  min-height:28px;
-  margin:2px 0 6px;
-  text-align:center;
-  font-size:17px;
-  font-weight:850;
-}
-.status.ok{color:var(--ok)}
-.status.error{color:var(--bad)}
-.actions{
-  width:100%;
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-}
-.actions button{
-  min-height:54px;
-  border-radius:14px;
-  font-size:17px;
-  font-weight:850;
-}
-.main-btn{border:0;background:var(--accent);color:white}
-.answer-btn{border:1px solid var(--line);background:#fff;color:var(--text)}
-.answer-btn.confirm{border-color:#f59e0b;background:#fffbeb;color:var(--warn)}
-.answer-btn:disabled{opacity:.45;cursor:default}
-
-/* MODALS */
-.modal{
-  position:fixed;
-  inset:0;
-  background:rgba(16,24,40,.44);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  padding:14px;
-  z-index:30;
-}
-.modal.show{display:flex}
-.modal-card{
-  width:min(560px,100%);
-  max-height:88vh;
-  overflow:auto;
-  background:#fff;
-  border-radius:20px;
-  padding:18px;
-  box-shadow:0 20px 60px rgba(16,24,40,.25);
-}
-.modal-head{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:10px;
-  margin-bottom:10px;
-}
-.modal-head h2{margin:0;font-size:22px}
-.close{
-  width:38px;height:38px;
-  border-radius:50%;
-  border:1px solid var(--line);
-  background:#fff;
-  font-size:20px;
-}
-.info-text{color:#475467;line-height:1.5;font-size:15px}
-.info-text p{margin:9px 0}
-
-/* HISTORY */
-.history-user{
-  color:var(--muted);
-  margin:-3px 0 12px;
-}
-.stats{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:8px;
-  margin-bottom:14px;
-}
-.stat{
-  background:#f8fafc;
-  border:1px solid #eaecf0;
-  border-radius:12px;
-  padding:10px 6px;
-  text-align:center;
-}
-.stat b{display:block;font-size:21px}
-.stat span{font-size:12px;color:var(--muted)}
-.history-list{display:grid;gap:9px}
-.history-item{
-  border:1px solid #eaecf0;
-  border-radius:13px;
-  padding:10px 11px;
-}
-.history-top{
-  display:flex;
-  justify-content:space-between;
-  gap:8px;
-  align-items:flex-start;
-}
-.expression{
-  font-family:"Courier New",monospace;
-  font-size:19px;
-  font-weight:800;
-}
-.date{font-size:12px;color:var(--muted);white-space:nowrap}
-.attempts{
-  margin-top:6px;
-  color:#475467;
-  font-size:13px;
-  line-height:1.45;
-}
-.tag{
-  display:inline-block;
-  padding:2px 7px;
-  margin:2px 3px 0 0;
-  border-radius:999px;
-  background:#f2f4f7;
-  font-size:12px;
-}
-.tag.oktag{background:#ecfdf3;color:#166534}
-.tag.badtag{background:#fff1f0;color:#991b1b}
-.empty{
-  color:var(--muted);
-  text-align:center;
-  padding:22px 8px;
-}
-.history-footer{
-  margin-top:14px;
-  display:flex;
-  justify-content:flex-end;
-}
-.danger{
-  border:1px solid #fda29b;
-  color:#b42318;
-  background:#fff;
-  border-radius:11px;
-  min-height:42px;
-  padding:0 12px;
-  font-weight:800;
-}
-
-@media(max-width:560px){
-  .app{padding:9px}
-  .card{border-radius:19px}
-  .exercise-card{padding:14px 10px 14px}
-  .math{--cell:50px;grid-template-columns:30px repeat(var(--digits),var(--cell))}
-  .digit{font-size:40px;height:55px}
-  .answer{width:43px;height:50px;font-size:31px}
-  .small-input{width:32px;height:29px;font-size:17px}
-  .small-input.two{width:40px}
-  .stats{grid-template-columns:repeat(3,1fr)}
-}
+html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+button,select,input{font:inherit} button{cursor:pointer}
+.app{width:min(720px,100%);min-height:100vh;margin:0 auto;padding:10px}
+.screen{display:none}.screen.active{display:block}
+.card{background:var(--card);border-radius:22px;padding:18px;box-shadow:0 10px 34px rgba(16,24,40,.08)}
+.setup-card{margin-top:1.5vh}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.brand-mark{width:58px;height:58px;border-radius:17px;background:var(--accent);display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;color:#fff;overflow:hidden;box-shadow:0 8px 20px rgba(37,99,235,.22)}
+.brand-mark span{display:grid;place-items:center;font-size:24px;font-weight:900;line-height:1}.brand-mark span:nth-child(2),.brand-mark span:nth-child(3){background:rgba(255,255,255,.09)}
+h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px 0 0;color:var(--muted);font-size:14px}
+.section-title{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:850;margin:16px 0 8px}
+.user-chips{display:flex;gap:8px;flex-wrap:wrap}.user-chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 13px;font-weight:800;color:var(--text)}.user-chip.active{border-color:var(--accent);background:var(--accentSoft);color:#1d4ed8}.add-user{border-style:dashed;color:var(--accent)}
+.new-user-row{display:none;grid-template-columns:1fr auto;gap:8px;margin-top:9px}.new-user-row.show{display:grid}.new-user-row input{min-width:0}.compact-btn{border:0;border-radius:12px;background:var(--accent);color:#fff;font-weight:850;padding:0 14px}
+.operation-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.op-card{border:1px solid var(--line);background:#fff;border-radius:15px;min-height:78px;padding:7px 4px;display:grid;place-items:center;align-content:center;gap:2px;color:var(--text)}.op-card .symbol{font-size:30px;font-weight:900;line-height:1}.op-card .name{font-size:11px;font-weight:800;color:var(--muted)}.op-card.active{border:2px solid var(--accent);background:var(--accentSoft);color:#1d4ed8}.op-card.active .name{color:#1d4ed8}
+.settings{display:grid;grid-template-columns:1fr 1fr;gap:10px}.setting{display:grid;gap:5px}.setting.full{grid-column:1/-1}.setting span{font-size:13px;font-weight:800;color:#344054}.setting select{min-height:46px;width:100%;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--text);padding:0 10px}
+.user-summary{min-height:18px;margin-top:10px;color:var(--muted);font-size:13px}
+.setup-actions{display:grid;grid-template-columns:1fr 1.35fr;gap:9px;margin-top:14px}.setup-actions button{min-height:52px;border-radius:14px;font-size:16px;font-weight:850}.start{border:0;background:var(--accent);color:#fff}.history-btn{border:1px solid var(--line);background:#fff;color:var(--text)}
+.install-app-btn{width:100%;min-height:46px;margin-top:9px;border:1px solid #bfdbfe;border-radius:14px;background:#eff6ff;color:#1d4ed8;font-weight:850}
+.topbar{height:50px;display:grid;grid-template-columns:46px 1fr 46px;align-items:center;margin-bottom:6px}.icon-btn{width:40px;height:40px;border:1px solid var(--line);border-radius:50%;background:#fff;color:var(--text);font-size:21px;font-weight:850;display:grid;place-items:center;padding:0}.counter{text-align:center;font-weight:850;font-size:15px}.exercise-card{padding:14px 10px 13px;display:flex;flex-direction:column;align-items:center}.exercise-label{font-size:12px;font-weight:850;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}.math-wrap{width:100%;display:flex;align-items:center;justify-content:center;padding:6px 0 3px;min-height:190px}.math{--cell:54px;display:grid;grid-template-columns:34px repeat(var(--digits),var(--cell));grid-auto-rows:auto;justify-content:center;align-items:end;font-variant-numeric:tabular-nums;user-select:none}.small-input{width:34px;height:29px;padding:0;text-align:center;border:1.5px dashed #98a2b3;border-radius:8px;background:#fafafa;font-weight:850;font-size:17px;color:#7c3aed}.small-input.two{width:42px}.small-input:disabled{opacity:.15}.digit{height:55px;display:flex;align-items:center;justify-content:center;font-family:"Courier New",monospace;font-size:42px;font-weight:700;position:relative}.digit.changed{color:#98a2b3}.digit.changed::after{content:"";position:absolute;left:13%;right:13%;top:50%;height:3px;background:#667085;transform:rotate(-10deg);border-radius:4px}.op{align-self:center;justify-self:center;font-size:32px;font-weight:850}.rule{grid-column:1/-1;height:3px;background:var(--text);border-radius:3px;margin:2px 0 8px}.answer{width:46px;height:51px;padding:0;text-align:center;border:2px solid #98a2b3;border-radius:10px;font-family:"Courier New",monospace;font-size:33px;font-weight:750}.good{border-color:var(--ok)!important;background:#ecfdf3!important}.bad{border-color:var(--bad)!important;background:#fff1f0!important}.status{min-height:27px;margin:2px 0 6px;text-align:center;font-size:16px;font-weight:850}.status.ok{color:var(--ok)}.status.error{color:var(--bad)}.actions{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:9px}.actions button{min-height:52px;border-radius:14px;font-size:16px;font-weight:850}.main-btn{border:0;background:var(--accent);color:#fff}.answer-btn{border:1px solid var(--line);background:#fff;color:var(--text)}.answer-btn.confirm{border-color:#f59e0b;background:#fffbeb;color:var(--warn)}.answer-btn:disabled{opacity:.45;cursor:default}
+.division-board{display:grid;grid-template-columns:auto auto;align-items:start;gap:0;font-family:"Courier New",monospace;font-weight:800}.dividend{font-size:42px;padding:4px 16px 4px 4px;border-right:3px solid var(--text);min-height:58px;display:flex;align-items:center}.div-right{display:grid;grid-template-rows:auto auto}.divisor{font-size:42px;padding:4px 10px 5px;border-bottom:3px solid var(--text);text-align:center}.quotient-inputs{display:flex;justify-content:center;gap:3px;padding-top:8px}.quotient-inputs .answer{width:42px;height:48px;font-size:30px}.division-note{font-size:12px;color:var(--muted);margin-top:8px;text-align:center}
+.modal{position:fixed;inset:0;background:rgba(16,24,40,.44);display:none;align-items:center;justify-content:center;padding:14px;z-index:30}.modal.show{display:flex}.modal-card{width:min(560px,100%);max-height:88vh;overflow:auto;background:#fff;border-radius:20px;padding:18px;box-shadow:0 20px 60px rgba(16,24,40,.25)}.modal-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.modal-head h2{margin:0;font-size:22px}.close{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:#fff;font-size:20px}.info-text{color:#475467;line-height:1.5;font-size:14px}.info-text p{margin:9px 0}.history-user{color:var(--muted);margin:-3px 0 12px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}.stat{background:#f8fafc;border:1px solid #eaecf0;border-radius:12px;padding:10px 6px;text-align:center}.stat b{display:block;font-size:21px}.stat span{font-size:12px;color:var(--muted)}.history-list{display:grid;gap:9px}.history-item{border:1px solid #eaecf0;border-radius:13px;padding:10px 11px}.history-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.expression{font-family:"Courier New",monospace;font-size:18px;font-weight:800}.date{font-size:12px;color:var(--muted);white-space:nowrap}.attempts{margin-top:6px;color:#475467;font-size:13px;line-height:1.45}.tag{display:inline-block;padding:2px 7px;margin:2px 3px 0 0;border-radius:999px;background:#f2f4f7;font-size:12px}.tag.oktag{background:#ecfdf3;color:#166534}.tag.badtag{background:#fff1f0;color:#991b1b}.empty{color:var(--muted);text-align:center;padding:22px 8px}.history-footer{margin-top:14px;display:flex;justify-content:flex-end}.danger{border:1px solid #fda29b;color:#b42318;background:#fff;border-radius:11px;min-height:42px;padding:0 12px;font-weight:800}
+.update-banner{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);width:min(520px,calc(100% - 20px));background:#172033;color:#fff;border-radius:15px;padding:10px 11px 10px 14px;display:none;align-items:center;justify-content:space-between;gap:10px;z-index:50;box-shadow:0 10px 30px rgba(16,24,40,.3)}.update-banner.show{display:flex}.update-banner span{font-size:14px;font-weight:750}.update-banner button{border:0;background:#fff;color:#172033;border-radius:10px;padding:9px 12px;font-weight:900}
+@media(max-width:560px){.operation-grid{gap:6px}.op-card{min-height:70px}.op-card .symbol{font-size:27px}.settings{gap:8px}.math{--cell:48px;grid-template-columns:28px repeat(var(--digits),var(--cell))}.digit{font-size:38px;height:51px}.answer{width:41px;height:47px;font-size:29px}.small-input{width:31px;height:27px;font-size:16px}.small-input.two{width:39px}.math-wrap{min-height:176px}.dividend,.divisor{font-size:36px}.division-board{max-width:100%}}
 </style>
 </head>
 <body>
 <div class="app">
+<section id="configScreen" class="screen active">
+  <div class="card setup-card">
+    <div class="brand"><div class="brand-mark" aria-hidden="true"><span>+</span><span>−</span><span>×</span><span>÷</span></div><div><h1>Matemáticas tradicionales</h1><p class="subtitle">Practica paso a paso.</p></div></div>
 
-  <!-- CONFIGURACIÓN -->
-  <section id="configScreen" class="screen active">
-    <div class="card setup-card">
-      <h1>Sumas y restas</h1>
-      <p class="subtitle">Elige el usuario y los ejercicios.</p>
+    <div class="section-title">Usuario</div>
+    <div id="userChips" class="user-chips"></div>
+    <div id="newUserRow" class="new-user-row"><input id="newUserName" type="text" maxlength="24" placeholder="Nombre"><button id="saveUserBtn" class="compact-btn">Añadir</button></div>
 
-      <div class="setup-grid">
-        <label>
-          Nombre
-          <input id="userName" type="text" maxlength="24" placeholder="Escribe el nombre">
-        </label>
-
-        <div id="savedUsersWrap" style="display:none">
-          <label>
-            Usuarios guardados
-            <select id="savedUsers"></select>
-          </label>
-        </div>
-
-        <label>
-          Número de cifras
-          <select id="digits">
-            <option value="2">2 cifras</option>
-            <option value="3" selected>3 cifras</option>
-            <option value="4">4 cifras</option>
-            <option value="5">5 cifras</option>
-          </select>
-        </label>
-
-        <label>
-          Operación
-          <select id="operation">
-            <option value="add">Sumas</option>
-            <option value="sub">Restas</option>
-            <option value="mix" selected>Mezcladas</option>
-          </select>
-        </label>
-
-        <label>
-          Llevadas
-          <select id="carryMode">
-            <option value="yes">Con llevadas</option>
-            <option value="no">Sin llevadas</option>
-            <option value="mix" selected>Mezcladas</option>
-          </select>
-        </label>
-      </div>
-
-      <div id="userSummary" class="user-summary"></div>
-
-      <div class="setup-actions">
-        <button id="historyBtn" class="history-btn">Historial</button>
-        <button id="startBtn" class="start">Empezar</button>
-      </div>
-      <button id="installBtn" class="install-app-btn" style="display:none">Instalar aplicación</button>
-    </div>
-  </section>
-
-  <!-- EJERCICIOS -->
-  <section id="exerciseScreen" class="screen">
-    <div class="topbar">
-      <button id="backBtn" class="icon-btn" aria-label="Volver">←</button>
-      <div id="counter" class="counter">Hechas: 0</div>
-      <button id="infoBtn" class="icon-btn" aria-label="Información">i</button>
+    <div class="section-title">Operación</div>
+    <div class="operation-grid">
+      <button class="op-card active" data-op="add"><span class="symbol">+</span><span class="name">Suma</span></button>
+      <button class="op-card" data-op="sub"><span class="symbol">−</span><span class="name">Resta</span></button>
+      <button class="op-card" data-op="mul"><span class="symbol">×</span><span class="name">Multiplica</span></button>
+      <button class="op-card" data-op="div"><span class="symbol">÷</span><span class="name">Divide</span></button>
     </div>
 
-    <div class="card exercise-card">
-      <div class="math-wrap">
-        <div id="math" class="math"></div>
-      </div>
-
-      <div id="status" class="status"></div>
-
-      <div class="actions">
-        <button id="mainBtn" class="main-btn">Corregir</button>
-        <button id="solutionBtn" class="answer-btn">Ver respuesta</button>
-      </div>
-    </div>
-  </section>
-</div>
-
-<!-- INFO -->
-<div id="infoModal" class="modal" role="dialog" aria-modal="true">
-  <div class="modal-card">
-    <div class="modal-head">
-      <h2>Cómo se hace</h2>
-      <button id="closeInfo" class="close">×</button>
-    </div>
-    <div class="info-text">
-      <p><b>Sumas:</b> escribe las llevadas arriba y el resultado debajo.</p>
-      <p><b>Restas:</b> si no puedes restar, escribe un <b>1 arriba</b> para añadir 10.</p>
-      <p>Ese 1 pasa a la columna de la izquierda: <b>súmalo al número de abajo y escribe su nuevo valor</b>. El número anterior se tacha automáticamente.</p>
-      <p>Cuando todo esté correcto, <b>Corregir</b> cambia a <b>Siguiente</b>.</p>
-    </div>
+    <div class="section-title">Dificultad</div>
+    <div id="settings" class="settings"></div>
+    <div id="userSummary" class="user-summary"></div>
+    <div class="setup-actions"><button id="historyBtn" class="history-btn">Historial</button><button id="startBtn" class="start">Empezar</button></div>
+    <button id="installBtn" class="install-app-btn" style="display:none">Instalar aplicación</button>
   </div>
+</section>
+
+<section id="exerciseScreen" class="screen">
+  <div class="topbar"><button id="backBtn" class="icon-btn" aria-label="Volver">←</button><div id="counter" class="counter">Hechas: 0</div><button id="infoBtn" class="icon-btn" aria-label="Información">i</button></div>
+  <div class="card exercise-card"><div id="exerciseLabel" class="exercise-label"></div><div class="math-wrap"><div id="math"></div></div><div id="status" class="status"></div><div class="actions"><button id="mainBtn" class="main-btn">Corregir</button><button id="solutionBtn" class="answer-btn">Ver respuesta</button></div></div>
+</section>
 </div>
 
-<!-- HISTORIAL -->
-<div id="historyModal" class="modal" role="dialog" aria-modal="true">
-  <div class="modal-card">
-    <div class="modal-head">
-      <h2>Historial</h2>
-      <button id="closeHistory" class="close">×</button>
-    </div>
-    <div id="historyUser" class="history-user"></div>
-    <div id="stats" class="stats"></div>
-    <div id="historyList" class="history-list"></div>
-    <div class="history-footer">
-      <button id="clearHistory" class="danger">Borrar historial</button>
-    </div>
-  </div>
-</div>
+<div id="infoModal" class="modal" role="dialog" aria-modal="true"><div class="modal-card"><div class="modal-head"><h2>Cómo se hace</h2><button id="closeInfo" class="close">×</button></div><div id="infoText" class="info-text"></div></div></div>
+<div id="historyModal" class="modal" role="dialog" aria-modal="true"><div class="modal-card"><div class="modal-head"><h2>Historial</h2><button id="closeHistory" class="close">×</button></div><div id="historyUser" class="history-user"></div><div id="stats" class="stats"></div><div id="historyList" class="history-list"></div><div class="history-footer"><button id="clearHistory" class="danger">Borrar historial</button></div></div></div>
+<div id="updateBanner" class="update-banner"><span>Nueva versión disponible</span><button id="updateBtn">Actualizar</button></div>
 
 <script>
-const $ = id => document.getElementById(id);
+const $=id=>document.getElementById(id);
+const STORAGE_KEY='sumasRestas_v5'; // se mantiene para conservar el historial ya existente
+const RETENTION_DAYS=30;
+let db=loadDB(), currentUser='', selectedOp='add', settingsState={add:{top:3,bottom:3,carry:'mix'},sub:{digits:3,carry:'mix'},mul:{top:3,carry:'mix'},div:{dividend:3}}, current=null, record=null, completedThisSession=0, exerciseSolved=false, revealConfirm=false;
 
-const STORAGE_KEY = 'sumasRestas_v5';
-const RETENTION_DAYS = 30;
-
-let db = loadDB();
-let currentUser = '';
-let current = null;
-let completedThisSession = 0;
-let exerciseSolved = false;
-let revealConfirm = false;
-let record = null;
-
-function loadDB(){
-  try{
-    const raw=localStorage.getItem(STORAGE_KEY);
-    const data=raw?JSON.parse(raw):{users:{},lastUser:''};
-    if(!data.users) data.users={};
-    pruneOld(data);
-    return data;
-  }catch(e){
-    return {users:{},lastUser:''};
-  }
-}
-function saveDB(){
-  pruneOld(db);
-  try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(db)); }catch(e){}
-}
-function pruneOld(data){
-  const limit=Date.now()-RETENTION_DAYS*24*60*60*1000;
-  Object.values(data.users||{}).forEach(u=>{
-    u.history=(u.history||[]).filter(x=>new Date(x.date).getTime()>=limit);
-  });
-}
-function ensureUser(name){
-  const clean=name.trim().slice(0,24);
-  if(!clean) return '';
-  if(!db.users[clean]){
-    db.users[clean]={history:[],created:new Date().toISOString()};
-  }
-  db.lastUser=clean;
-  saveDB();
-  return clean;
-}
-function userHistory(name){
-  return db.users[name]?.history || [];
-}
-function totalDone(name){
-  return userHistory(name).length;
-}
-function updateSavedUsers(){
-  const names=Object.keys(db.users).sort((a,b)=>a.localeCompare(b,'es'));
-  const wrap=$('savedUsersWrap');
-  const sel=$('savedUsers');
-  sel.innerHTML='';
-
-  if(names.length===0){
-    wrap.style.display='none';
-    return;
-  }
-
-  wrap.style.display='block';
-  const first=document.createElement('option');
-  first.value='';
-  first.textContent='— Elegir usuario —';
-  sel.appendChild(first);
-
-  names.forEach(name=>{
-    const o=document.createElement('option');
-    o.value=name;
-    o.textContent=name;
-    sel.appendChild(o);
-  });
-
-  if(db.lastUser && names.includes(db.lastUser)){
-    sel.value=db.lastUser;
-  }
-}
-function updateUserSummary(){
-  const name=$('userName').value.trim();
-  if(name && db.users[name]){
-    $('userSummary').textContent=
-      `${totalDone(name)} ejercicios guardados en los últimos ${RETENTION_DAYS} días.`;
-  }else{
-    $('userSummary').textContent='';
-  }
-}
-function showScreen(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  $(id).classList.add('active');
-}
+function loadDB(){try{const raw=localStorage.getItem(STORAGE_KEY);const data=raw?JSON.parse(raw):{users:{},lastUser:''};if(!data.users)data.users={};pruneOld(data);return data}catch(e){return{users:{},lastUser:''}}}
+function saveDB(){pruneOld(db);try{localStorage.setItem(STORAGE_KEY,JSON.stringify(db))}catch(e){}}
+function pruneOld(data){const limit=Date.now()-RETENTION_DAYS*86400000;Object.values(data.users||{}).forEach(u=>u.history=(u.history||[]).filter(x=>new Date(x.date).getTime()>=limit))}
+function ensureUser(name){const clean=(name||'').trim().slice(0,24);if(!clean)return'';if(!db.users[clean])db.users[clean]={history:[],created:new Date().toISOString()};db.lastUser=clean;saveDB();return clean}
+function historyFor(name){return db.users[name]?.history||[]}
+function totalDone(name){return historyFor(name).length}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active')}
 function rint(min,max){return Math.floor(Math.random()*(max-min+1))+min}
+function exactDigits(d){return [10**(d-1),10**d-1]}
 function digitsOf(n,d){return String(n).padStart(d,'0').split('').map(Number)}
-
-function addCarries(a,b,d){
-  const A=digitsOf(a,d), B=digitsOf(b,d);
-  let carry=0, carries=Array(d).fill(0), any=false;
-  for(let i=d-1;i>=0;i--){
-    const out=(A[i]+B[i]+carry)>=10 ? 1 : 0;
-    if(out) any=true;
-    if(i>0) carries[i-1]=out;
-    carry=out;
-  }
-  return {carries,any};
-}
-
-function subState(a,b,d){
-  const A=digitsOf(a,d), B=digitsOf(b,d);
-  let carryToBottom=0;
-  const borrowTop=Array(d).fill(0);
-  const bottomReplacement=Array(d).fill(null);
-
-  for(let i=d-1;i>=0;i--){
-    const effectiveBottom=B[i]+carryToBottom;
-    if(carryToBottom===1) bottomReplacement[i]=effectiveBottom;
-    const borrow=A[i] < effectiveBottom ? 1 : 0;
-    borrowTop[i]=borrow;
-    carryToBottom=borrow;
-  }
-  return {borrowTop,bottomReplacement,any:borrowTop.some(Boolean)};
-}
-
-function matchesMode(a,b,d,op,mode){
-  const any=op==='add' ? addCarries(a,b,d).any : subState(a,b,d).any;
-  if(mode==='mix') return true;
-  return mode==='yes' ? any : !any;
-}
-
-function newExercise(){
-  const d=+$('digits').value;
-  let op=$('operation').value;
-  if(op==='mix') op=Math.random()<.5?'add':'sub';
-
-  let mode=$('carryMode').value;
-  if(mode==='mix') mode=Math.random()<.5?'yes':'no';
-
-  const min=10**(d-1), max=10**d-1;
-  let a,b,tries=0;
-
-  do{
-    a=rint(min,max);
-    b=rint(min,max);
-    if(op==='sub' && b>a) [a,b]=[b,a];
-    tries++;
-  }while(!matchesMode(a,b,d,op,mode) && tries<30000);
-
-  current={d,op,mode,a,b,result:op==='add'?a+b:a-b};
-
-  if(op==='add') Object.assign(current,addCarries(a,b,d));
-  else Object.assign(current,subState(a,b,d));
-
-  record={
-    date:new Date().toISOString(),
-    operation:op,
-    digits:d,
-    carryMode:mode,
-    a,b,
-    result:current.result,
-    attempts:[],
-    solutionUsed:false
-  };
-
-  renderExercise();
-}
-
-function makeText(parent,row,col,text,cls='digit',id=''){
-  const el=document.createElement('div');
-  el.textContent=text;
-  el.className=cls;
-  el.style.gridRow=row;
-  el.style.gridColumn=col;
-  if(id) el.id=id;
-  parent.appendChild(el);
-  return el;
-}
-
-function onAnyEdit(){
-  exerciseSolved=false;
-  $('mainBtn').textContent='Corregir';
-  $('status').textContent='';
-  $('status').className='status';
-  resetReveal();
-}
-
-function makeInput(parent,row,col,type,index,enabled=true,maxLength=1){
-  const input=document.createElement('input');
-  input.className='small-input'+(maxLength===2?' two':'');
-  input.inputMode='numeric';
-  input.maxLength=maxLength;
-  input.autocomplete='off';
-  input.dataset.type=type;
-  input.dataset.index=index;
-  input.style.gridRow=row;
-  input.style.gridColumn=col;
-  if(!enabled) input.disabled=true;
-
-  input.addEventListener('input',()=>{
-    input.value=input.value.replace(/\D/g,'').slice(0,maxLength);
-    input.classList.remove('good','bad');
-    onAnyEdit();
-
-    if(type==='bottomreplacement'){
-      const original=$('bottom-'+index);
-      if(original) original.classList.toggle('changed',input.value!=='');
-    }
-  });
-  parent.appendChild(input);
-  return input;
-}
-
-function makeAnswer(parent,row,col,index){
-  const input=document.createElement('input');
-  input.className='answer';
-  input.inputMode='numeric';
-  input.maxLength=1;
-  input.autocomplete='off';
-  input.dataset.type='answer';
-  input.dataset.index=index;
-  input.style.gridRow=row;
-  input.style.gridColumn=col;
-  input.addEventListener('input',()=>{
-    input.value=input.value.replace(/\D/g,'').slice(-1);
-    input.classList.remove('good','bad');
-    onAnyEdit();
-  });
-  parent.appendChild(input);
-  return input;
-}
-
-function renderExercise(){
-  exerciseSolved=false;
-  resetReveal();
-  $('solutionBtn').disabled=false;
-  $('mainBtn').textContent='Corregir';
-  $('status').textContent='';
-  $('status').className='status';
-
-  const m=$('math');
-  m.innerHTML='';
-  m.style.setProperty('--digits',current.d);
-
-  const A=digitsOf(current.a,current.d);
-  const B=digitsOf(current.b,current.d);
-  let row=1;
-
-  if(current.op==='add'){
-    for(let i=0;i<current.d;i++){
-      makeInput(m,row,i+2,'addcarry',i,i<current.d-1,1);
-    }
-    row++;
-  }else{
-    for(let i=0;i<current.d;i++){
-      makeInput(m,row,i+2,'borrow',i,true,1);
-    }
-    row++;
-  }
-
-  for(let i=0;i<current.d;i++) makeText(m,row,i+2,A[i]);
-  row++;
-
-  if(current.op==='sub'){
-    for(let i=0;i<current.d;i++){
-      makeInput(m,row,i+2,'bottomreplacement',i,true,2);
-    }
-    row++;
-  }
-
-  makeText(m,row,1,current.op==='add'?'+':'−','op');
-  for(let i=0;i<current.d;i++){
-    makeText(m,row,i+2,B[i],'digit',current.op==='sub'?'bottom-'+i:'');
-  }
-  row++;
-
-  const rule=document.createElement('div');
-  rule.className='rule';
-  rule.style.gridRow=row;
-  m.appendChild(rule);
-  row++;
-
-  const rs=String(current.result);
-  if(rs.length>current.d) makeAnswer(m,row,1,-1);
-  for(let i=0;i<current.d;i++) makeAnswer(m,row,i+2,i);
-
-  setTimeout(()=>{
-    const arr=[...document.querySelectorAll('.answer')];
-    if(arr.length) arr[arr.length-1].focus();
-  },0);
-}
-
-function expectedAnswers(){
-  const s=String(current.result);
-  const map={};
-  if(s.length>current.d){
-    map[-1]=s[0];
-    const rest=s.slice(1).padStart(current.d,'0');
-    for(let i=0;i<current.d;i++) map[i]=rest[i];
-  }else{
-    const rest=s.padStart(current.d,'0');
-    for(let i=0;i<current.d;i++) map[i]=rest[i];
-  }
-  return map;
-}
-
-function enteredAnswer(){
-  const inputs=[...document.querySelectorAll('[data-type="answer"]')];
-  const extra=inputs.find(x=>+x.dataset.index===-1);
-  let s=extra ? extra.value : '';
-  for(let i=0;i<current.d;i++){
-    const x=inputs.find(el=>+el.dataset.index===i);
-    s+=(x?.value||'');
-  }
-  return s || '—';
-}
-
-function snapshotWork(){
-  const values={};
-  document.querySelectorAll('#math input').forEach(inp=>{
-    values[`${inp.dataset.type}:${inp.dataset.index}`]=inp.value;
-  });
-  return values;
-}
-
-function grade(){
-  let ok=true;
-  const ans=expectedAnswers();
-
-  document.querySelectorAll('#math input').forEach(x=>x.classList.remove('good','bad'));
-
-  document.querySelectorAll('[data-type="answer"]').forEach(inp=>{
-    const exp=ans[+inp.dataset.index] ?? '';
-    const good=inp.value===exp;
-    inp.classList.add(good?'good':'bad');
-    if(!good) ok=false;
-  });
-
-  if(current.op==='add'){
-    document.querySelectorAll('[data-type="addcarry"]').forEach(inp=>{
-      if(inp.disabled) return;
-      const exp=current.carries[+inp.dataset.index]?'1':'';
-      const good=inp.value===exp || (exp==='' && inp.value==='0');
-      inp.classList.add(good?'good':'bad');
-      if(!good) ok=false;
-    });
-  }else{
-    document.querySelectorAll('[data-type="borrow"]').forEach(inp=>{
-      const exp=current.borrowTop[+inp.dataset.index]?'1':'';
-      const good=inp.value===exp || (exp==='' && inp.value==='0');
-      inp.classList.add(good?'good':'bad');
-      if(!good) ok=false;
-    });
-
-    document.querySelectorAll('[data-type="bottomreplacement"]').forEach(inp=>{
-      const repl=current.bottomReplacement[+inp.dataset.index];
-      const exp=repl===null?'':String(repl);
-      const good=inp.value===exp || (exp==='' && inp.value==='0');
-      inp.classList.add(good?'good':'bad');
-      if(!good) ok=false;
-
-      const original=$('bottom-'+inp.dataset.index);
-      if(original) original.classList.toggle('changed',inp.value!=='');
-    });
-  }
-
-  record.attempts.push({
-    at:new Date().toISOString(),
-    answer:enteredAnswer(),
-    correct:ok,
-    work:snapshotWork()
-  });
-
-  if(ok){
-    exerciseSolved=true;
-    $('status').textContent='¡Muy bien! ✓';
-    $('status').className='status ok';
-    $('mainBtn').textContent='Siguiente';
-    $('solutionBtn').disabled=true;
-    commitRecord();
-    completedThisSession++;
-    updateCounter();
-  }else{
-    exerciseSolved=false;
-    $('status').textContent='Revisa las casillas en rojo';
-    $('status').className='status error';
-    $('mainBtn').textContent='Corregir';
-  }
-  return ok;
-}
-
-function fillSolution(){
-  const ans=expectedAnswers();
-
-  document.querySelectorAll('[data-type="answer"]').forEach(inp=>{
-    inp.value=ans[+inp.dataset.index] ?? '';
-    inp.classList.remove('bad');
-    inp.classList.add('good');
-  });
-
-  if(current.op==='add'){
-    document.querySelectorAll('[data-type="addcarry"]').forEach(inp=>{
-      if(!inp.disabled){
-        inp.value=current.carries[+inp.dataset.index]?'1':'';
-        inp.classList.add('good');
-      }
-    });
-  }else{
-    document.querySelectorAll('[data-type="borrow"]').forEach(inp=>{
-      inp.value=current.borrowTop[+inp.dataset.index]?'1':'';
-      inp.classList.add('good');
-    });
-
-    document.querySelectorAll('[data-type="bottomreplacement"]').forEach(inp=>{
-      const repl=current.bottomReplacement[+inp.dataset.index];
-      inp.value=repl===null?'':String(repl);
-      inp.classList.add('good');
-      const original=$('bottom-'+inp.dataset.index);
-      if(original) original.classList.toggle('changed',repl!==null);
-    });
-  }
-
-  record.solutionUsed=true;
-  exerciseSolved=true;
-  $('status').textContent='Respuesta mostrada';
-  $('status').className='status ok';
-  $('mainBtn').textContent='Siguiente';
-  $('solutionBtn').disabled=true;
-  resetReveal();
-  commitRecord();
-  completedThisSession++;
-  updateCounter();
-}
-
-function commitRecord(){
-  if(!record || !currentUser) return;
-  record.completedAt=new Date().toISOString();
-  db.users[currentUser].history.push(record);
-  saveDB();
-  record=null;
-}
-
-function resetReveal(){
-  revealConfirm=false;
-  $('solutionBtn').textContent='Ver respuesta';
-  $('solutionBtn').classList.remove('confirm');
-}
-
-function updateCounter(){
-  const total=totalDone(currentUser);
-  $('counter').textContent=`Hechas: ${completedThisSession} · Total: ${total}`;
-}
-
-function renderHistory(name){
-  const hist=[...userHistory(name)].sort((a,b)=>new Date(b.date)-new Date(a.date));
-  $('historyUser').textContent=name ? `${name} · últimos ${RETENTION_DAYS} días` : 'Selecciona un usuario';
-
-  if(!name || !db.users[name]){
-    $('stats').innerHTML='';
-    $('historyList').innerHTML='<div class="empty">No hay un usuario seleccionado.</div>';
-    $('clearHistory').style.display='none';
-    return;
-  }
-
-  $('clearHistory').style.display='inline-block';
-
-  const total=hist.length;
-  const firstTry=hist.filter(x=>x.attempts?.length===1 && x.attempts[0].correct && !x.solutionUsed).length;
-  const solutions=hist.filter(x=>x.solutionUsed).length;
-  const corrections=hist.reduce((s,x)=>s+(x.attempts?.length||0),0);
-
-  $('stats').innerHTML=`
-    <div class="stat"><b>${total}</b><span>ejercicios</span></div>
-    <div class="stat"><b>${firstTry}</b><span>a la primera</span></div>
-    <div class="stat"><b>${solutions}</b><span>con respuesta</span></div>
-  `;
-
-  if(hist.length===0){
-    $('historyList').innerHTML='<div class="empty">Todavía no hay ejercicios guardados.</div>';
-    return;
-  }
-
-  $('historyList').innerHTML=hist.map(x=>{
-    const op=x.operation==='add'?'+':'−';
-    const dt=new Date(x.date);
-    const date=dt.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'})+' '+dt.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
-    const tries=(x.attempts||[]).map((a,i)=>
-      `<span class="tag ${a.correct?'oktag':'badtag'}">${i+1}: ${escapeHtml(a.answer)} ${a.correct?'✓':'✗'}</span>`
-    ).join(' ');
-    const sol=x.solutionUsed?'<span class="tag">vio respuesta</span>':'';
-    return `
-      <div class="history-item">
-        <div class="history-top">
-          <div class="expression">${x.a} ${op} ${x.b} = ${x.result}</div>
-          <div class="date">${date}</div>
-        </div>
-        <div class="attempts">${tries || '<span class="tag">sin correcciones</span>'} ${sol}</div>
-      </div>
-    `;
-  }).join('');
-}
-
-function escapeHtml(v){
-  return String(v).replace(/[&<>"']/g,c=>({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  })[c]);
-}
-
-/* INIT */
-updateSavedUsers();
-if(db.lastUser){
-  $('userName').value=db.lastUser;
-}
-updateUserSummary();
-
-/* USER EVENTS */
-$('savedUsers').addEventListener('change',()=>{
-  if($('savedUsers').value){
-    $('userName').value=$('savedUsers').value;
-    updateUserSummary();
-  }
-});
-$('userName').addEventListener('input',updateUserSummary);
-
-$('startBtn').addEventListener('click',()=>{
-  const name=ensureUser($('userName').value);
-  if(!name){
-    $('userName').focus();
-    $('userName').style.borderColor='#b42318';
-    return;
-  }
-  $('userName').style.borderColor='';
-  currentUser=name;
-  completedThisSession=0;
-  updateSavedUsers();
-  updateCounter();
-  showScreen('exerciseScreen');
-  newExercise();
-});
-
-$('backBtn').addEventListener('click',()=>{
-  showScreen('configScreen');
-  updateSavedUsers();
-  updateUserSummary();
-});
-
-$('mainBtn').addEventListener('click',()=>{
-  if(exerciseSolved){
-    newExercise();
-  }else{
-    grade();
-  }
-});
-
-$('solutionBtn').addEventListener('click',()=>{
-  if(!revealConfirm){
-    revealConfirm=true;
-    $('solutionBtn').textContent='¿Seguro?';
-    $('solutionBtn').classList.add('confirm');
-    setTimeout(()=>{ if(revealConfirm) resetReveal(); },4000);
-  }else{
-    fillSolution();
-  }
-});
-
-$('infoBtn').addEventListener('click',()=> $('infoModal').classList.add('show'));
-$('closeInfo').addEventListener('click',()=> $('infoModal').classList.remove('show'));
-$('infoModal').addEventListener('click',e=>{
-  if(e.target===$('infoModal')) $('infoModal').classList.remove('show');
-});
-
-$('historyBtn').addEventListener('click',()=>{
-  const name=$('userName').value.trim() || db.lastUser;
-  renderHistory(name);
-  $('historyModal').classList.add('show');
-});
-$('closeHistory').addEventListener('click',()=> $('historyModal').classList.remove('show'));
-$('historyModal').addEventListener('click',e=>{
-  if(e.target===$('historyModal')) $('historyModal').classList.remove('show');
-});
-$('clearHistory').addEventListener('click',()=>{
-  const name=$('userName').value.trim() || db.lastUser;
-  if(!name || !db.users[name]) return;
-  if(confirm(`¿Borrar todo el historial de ${name}?`)){
-    db.users[name].history=[];
-    saveDB();
-    renderHistory(name);
-    updateUserSummary();
-  }
-});
-
-/* PWA: instalación y funcionamiento sin conexión */
-let deferredInstallPrompt = null;
-
-window.addEventListener('beforeinstallprompt', (event) => {
-  event.preventDefault();
-  deferredInstallPrompt = event;
-  const btn = document.getElementById('installBtn');
-  if (btn) btn.style.display = 'block';
-});
-
-const installBtn = document.getElementById('installBtn');
-if (installBtn) {
-  installBtn.addEventListener('click', async () => {
-    if (!deferredInstallPrompt) return;
-    deferredInstallPrompt.prompt();
-    try {
-      await deferredInstallPrompt.userChoice;
-    } finally {
-      deferredInstallPrompt = null;
-      installBtn.style.display = 'none';
-    }
-  });
-}
-
-window.addEventListener('appinstalled', () => {
-  deferredInstallPrompt = null;
-  const btn = document.getElementById('installBtn');
-  if (btn) btn.style.display = 'none';
-});
-
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js').catch(() => {});
-  });
-}
-
+function labelOp(op){return({add:'Suma',sub:'Resta',mul:'Multiplicación',div:'División'})[op]||op}
+function symbolOp(op){return({add:'+',sub:'−',mul:'×',div:'÷'})[op]||'?'}
+
+function renderUsers(){const names=Object.keys(db.users).sort((a,b)=>a.localeCompare(b,'es'));if(!currentUser)currentUser=(db.lastUser&&db.users[db.lastUser])?db.lastUser:(names[0]||'');const box=$('userChips');box.innerHTML='';names.forEach(name=>{const b=document.createElement('button');b.className='user-chip'+(name===currentUser?' active':'');b.textContent=name;b.onclick=()=>{currentUser=name;db.lastUser=name;saveDB();renderUsers();updateUserSummary()};box.appendChild(b)});const add=document.createElement('button');add.className='user-chip add-user';add.textContent='+ Nuevo';add.onclick=()=>{$('newUserRow').classList.toggle('show');if($('newUserRow').classList.contains('show'))$('newUserName').focus()};box.appendChild(add);updateUserSummary()}
+function updateUserSummary(){if(currentUser&&db.users[currentUser])$('userSummary').textContent=`${totalDone(currentUser)} ejercicios guardados en los últimos ${RETENTION_DAYS} días.`;else $('userSummary').textContent='Añade o selecciona un usuario.'}
+$('saveUserBtn').onclick=()=>{const n=ensureUser($('newUserName').value);if(!n)return $('newUserName').focus();currentUser=n;$('newUserName').value='';$('newUserRow').classList.remove('show');renderUsers()};
+$('newUserName').addEventListener('keydown',e=>{if(e.key==='Enter')$('saveUserBtn').click()});
+
+function options(min,max,selected,suffix=' cifras'){let s='';for(let i=min;i<=max;i++)s+=`<option value="${i}" ${i==selected?'selected':''}>${i}${suffix}</option>`;return s}
+function carryOptions(v){return `<option value="yes" ${v==='yes'?'selected':''}>Con llevadas</option><option value="no" ${v==='no'?'selected':''}>Sin llevadas</option><option value="mix" ${v==='mix'?'selected':''}>Mezcladas</option>`}
+function renderSettings(){document.querySelectorAll('.op-card').forEach(b=>b.classList.toggle('active',b.dataset.op===selectedOp));const s=settingsState[selectedOp];if(selectedOp==='add')$('settings').innerHTML=`<label class="setting"><span>Cifras arriba</span><select id="topDigits">${options(1,5,s.top)}</select></label><label class="setting"><span>Cifras abajo</span><select id="bottomDigits">${options(1,5,s.bottom)}</select></label><label class="setting full"><span>Llevadas</span><select id="carryMode">${carryOptions(s.carry)}</select></label>`;if(selectedOp==='sub')$('settings').innerHTML=`<label class="setting"><span>Número de cifras</span><select id="digits">${options(2,5,s.digits)}</select></label><label class="setting"><span>Llevadas</span><select id="carryMode">${carryOptions(s.carry)}</select></label>`;if(selectedOp==='mul')$('settings').innerHTML=`<label class="setting"><span>Cifras del número</span><select id="topDigits">${options(1,5,s.top)}</select></label><label class="setting"><span>Multiplicador</span><select disabled><option>1 cifra</option></select></label><label class="setting full"><span>Llevadas</span><select id="carryMode">${carryOptions(s.carry)}</select></label>`;if(selectedOp==='div')$('settings').innerHTML=`<label class="setting"><span>Cifras del dividendo</span><select id="dividendDigits">${options(2,5,s.dividend)}</select></label><label class="setting"><span>Divisor</span><select disabled><option>1 cifra</option></select></label>`;bindSettings()}
+function bindSettings(){if($('topDigits'))$('topDigits').onchange=e=>settingsState[selectedOp].top=+e.target.value;if($('bottomDigits'))$('bottomDigits').onchange=e=>settingsState.add.bottom=+e.target.value;if($('digits'))$('digits').onchange=e=>settingsState.sub.digits=+e.target.value;if($('dividendDigits'))$('dividendDigits').onchange=e=>settingsState.div.dividend=+e.target.value;if($('carryMode'))$('carryMode').onchange=e=>settingsState[selectedOp].carry=e.target.value}
+document.querySelectorAll('.op-card').forEach(b=>b.onclick=()=>{selectedOp=b.dataset.op;renderSettings()});
+
+function addCarries(a,b,n){const A=digitsOf(a,n),B=digitsOf(b,n);let carry=0, carries=Array(n).fill(0),any=false;for(let i=n-1;i>=0;i--){const out=A[i]+B[i]+carry>=10?1:0;if(out)any=true;if(i>0)carries[i-1]=out;carry=out}return{carries,any}}
+function subState(a,b,n){const A=digitsOf(a,n),B=digitsOf(b,n);let carryToBottom=0;const borrowTop=Array(n).fill(0),bottomReplacement=Array(n).fill(null);for(let i=n-1;i>=0;i--){const effectiveBottom=B[i]+carryToBottom;if(carryToBottom===1)bottomReplacement[i]=effectiveBottom;const borrow=A[i]<effectiveBottom?1:0;borrowTop[i]=borrow;carryToBottom=borrow}return{borrowTop,bottomReplacement,any:borrowTop.some(Boolean)}}
+function mulCarries(a,m,n){const A=digitsOf(a,n);let carry=0, carries=Array(n).fill(0),any=false;for(let i=n-1;i>=0;i--){const total=A[i]*m+carry;const out=Math.floor(total/10);if(out>0)any=true;if(i>0)carries[i-1]=out;carry=out}return{carries,any}}
+function matchCarry(any,mode){return mode==='mix'||(mode==='yes'?any:!any)}
+
+function newExercise(){const op=selectedOp;let a,b,result,n,meta={};let tries=0;if(op==='add'){const s=settingsState.add,[amin,amax]=exactDigits(s.top),[bmin,bmax]=exactDigits(s.bottom);n=Math.max(s.top,s.bottom);do{a=rint(amin,amax);b=rint(bmin,bmax);meta=addCarries(a,b,n);tries++}while(!matchCarry(meta.any,s.carry)&&tries<30000);result=a+b;meta.topDigits=s.top;meta.bottomDigits=s.bottom;meta.carryMode=s.carry}else if(op==='sub'){const s=settingsState.sub,[min,max]=exactDigits(s.digits);n=s.digits;do{a=rint(min,max);b=rint(min,max);if(b>a)[a,b]=[b,a];meta=subState(a,b,n);tries++}while(!matchCarry(meta.any,s.carry)&&tries<30000);result=a-b;meta.carryMode=s.carry}else if(op==='mul'){const s=settingsState.mul,[min,max]=exactDigits(s.top);n=s.top;do{a=rint(min,max);b=rint(2,9);meta=mulCarries(a,b,n);tries++}while(!matchCarry(meta.any,s.carry)&&tries<30000);result=a*b;meta.carryMode=s.carry}else{const d=settingsState.div.dividend;const [min,max]=exactDigits(d);b=rint(2,9);const qmin=Math.max(1,Math.ceil(min/b)),qmax=Math.floor(max/b);const q=rint(qmin,qmax);a=q*b;result=q;n=String(result).length;meta.dividendDigits=d;meta.remainder=0}current={op,a,b,result,n,...meta};record={date:new Date().toISOString(),operation:op,a,b,result,settings:JSON.parse(JSON.stringify(settingsState[op])),attempts:[],solutionUsed:false};renderExercise()}
+
+function makeText(parent,row,col,text,cls='digit',id=''){const el=document.createElement('div');el.textContent=text;el.className=cls;el.style.gridRow=row;el.style.gridColumn=col;if(id)el.id=id;parent.appendChild(el);return el}
+function onEdit(){exerciseSolved=false;$('mainBtn').textContent='Corregir';$('solutionBtn').disabled=false;$('status').textContent='';$('status').className='status';resetReveal()}
+function makeInput(parent,row,col,type,index,enabled=true,maxLength=1){const input=document.createElement('input');input.className='small-input'+(maxLength===2?' two':'');input.inputMode='numeric';input.maxLength=maxLength;input.autocomplete='off';input.dataset.type=type;input.dataset.index=index;input.style.gridRow=row;input.style.gridColumn=col;if(!enabled)input.disabled=true;input.addEventListener('input',()=>{input.value=input.value.replace(/\D/g,'').slice(0,maxLength);input.classList.remove('good','bad');onEdit();if(type==='bottomreplacement'){const original=$('bottom-'+index);if(original)original.classList.toggle('changed',input.value!=='')}});parent.appendChild(input);return input}
+function makeAnswer(parent,row,col,index){const input=document.createElement('input');input.className='answer';input.inputMode='numeric';input.maxLength=1;input.autocomplete='off';input.dataset.type='answer';input.dataset.index=index;input.style.gridRow=row;input.style.gridColumn=col;input.addEventListener('input',()=>{input.value=input.value.replace(/\D/g,'').slice(-1);input.classList.remove('good','bad');onEdit()});parent.appendChild(input);return input}
+function renderExercise(){exerciseSolved=false;resetReveal();$('solutionBtn').disabled=false;$('mainBtn').textContent='Corregir';$('status').textContent='';$('status').className='status';$('exerciseLabel').textContent=labelOp(current.op);const host=$('math');host.innerHTML='';if(current.op==='div')return renderDivision(host);const n=current.n,grid=document.createElement('div');grid.className='math';grid.style.setProperty('--digits',n);host.appendChild(grid);const A=digitsOf(current.a,n),B=digitsOf(current.b,n);let row=1;if(current.op==='add'||current.op==='mul'){for(let i=0;i<n;i++)makeInput(grid,row,i+2,current.op==='add'?'addcarry':'mulcarry',i,i<n-1,1);row++}else{for(let i=0;i<n;i++)makeInput(grid,row,i+2,'borrow',i,true,1);row++}for(let i=0;i<n;i++)makeText(grid,row,i+2,A[i]);row++;if(current.op==='sub'){for(let i=0;i<n;i++)makeInput(grid,row,i+2,'bottomreplacement',i,true,2);row++}makeText(grid,row,1,symbolOp(current.op),'op');if(current.op==='mul'){makeText(grid,row,n+1,current.b)}else{for(let i=0;i<n;i++)makeText(grid,row,i+2,B[i],'digit',current.op==='sub'?'bottom-'+i:'')}row++;const rule=document.createElement('div');rule.className='rule';rule.style.gridRow=row;grid.appendChild(rule);row++;const rs=String(current.result);if(rs.length>n)makeAnswer(grid,row,1,-1);const padded=rs.length>n?rs.slice(1).padStart(n,'0'):rs.padStart(n,'0');for(let i=0;i<n;i++)makeAnswer(grid,row,i+2,i);setTimeout(focusLast,0)}
+function renderDivision(host){const board=document.createElement('div');board.className='division-board';const dividend=document.createElement('div');dividend.className='dividend';dividend.textContent=current.a;const right=document.createElement('div');right.className='div-right';const divisor=document.createElement('div');divisor.className='divisor';divisor.textContent=current.b;const q=document.createElement('div');q.className='quotient-inputs';String(current.result).split('').forEach((_,i)=>{const inp=document.createElement('input');inp.className='answer';inp.inputMode='numeric';inp.maxLength=1;inp.dataset.type='answer';inp.dataset.index=i;inp.addEventListener('input',()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);inp.classList.remove('good','bad');onEdit()});q.appendChild(inp)});right.append(divisor,q);board.append(dividend,right);host.appendChild(board);const note=document.createElement('div');note.className='division-note';note.textContent='División exacta · escribe el cociente';host.appendChild(note);setTimeout(focusLast,0)}
+function focusLast(){const arr=[...document.querySelectorAll('#math .answer')];if(arr.length)arr[arr.length-1].focus()}
+
+function expectedMap(){const s=String(current.result),map={};if(current.op==='div'){s.split('').forEach((c,i)=>map[i]=c);return map}const n=current.n;if(s.length>n){map[-1]=s[0];const rest=s.slice(1).padStart(n,'0');for(let i=0;i<n;i++)map[i]=rest[i]}else{const rest=s.padStart(n,'0');for(let i=0;i<n;i++)map[i]=rest[i]}return map}
+function enteredAnswer(){const inputs=[...document.querySelectorAll('#math [data-type="answer"]')].sort((a,b)=>+a.dataset.index-+b.dataset.index);if(current.op==='div')return inputs.map(x=>x.value).join('')||'—';const extra=inputs.find(x=>+x.dataset.index===-1);let s=extra?extra.value:'';for(let i=0;i<current.n;i++){const x=inputs.find(el=>+el.dataset.index===i);s+=x?.value||''}return s||'—'}
+function snapshotWork(){const values={};document.querySelectorAll('#math input').forEach(inp=>values[`${inp.dataset.type}:${inp.dataset.index}`]=inp.value);return values}
+function grade(){let ok=true;const ans=expectedMap();document.querySelectorAll('#math input').forEach(x=>x.classList.remove('good','bad'));document.querySelectorAll('#math [data-type="answer"]').forEach(inp=>{const exp=ans[+inp.dataset.index]??'';const good=inp.value===exp;inp.classList.add(good?'good':'bad');if(!good)ok=false});if(current.op==='add'||current.op==='mul'){const type=current.op==='add'?'addcarry':'mulcarry';document.querySelectorAll(`[data-type="${type}"]`).forEach(inp=>{if(inp.disabled)return;const exp=current.carries[+inp.dataset.index]?String(current.carries[+inp.dataset.index]):'';const good=inp.value===exp||(exp===''&&inp.value==='0');inp.classList.add(good?'good':'bad');if(!good)ok=false})}else if(current.op==='sub'){document.querySelectorAll('[data-type="borrow"]').forEach(inp=>{const exp=current.borrowTop[+inp.dataset.index]?'1':'';const good=inp.value===exp||(exp===''&&inp.value==='0');inp.classList.add(good?'good':'bad');if(!good)ok=false});document.querySelectorAll('[data-type="bottomreplacement"]').forEach(inp=>{const repl=current.bottomReplacement[+inp.dataset.index],exp=repl===null?'':String(repl),good=inp.value===exp||(exp===''&&inp.value==='0');inp.classList.add(good?'good':'bad');if(!good)ok=false;const original=$('bottom-'+inp.dataset.index);if(original)original.classList.toggle('changed',inp.value!=='')})}record.attempts.push({at:new Date().toISOString(),answer:enteredAnswer(),correct:ok,work:snapshotWork()});if(ok){exerciseSolved=true;$('status').textContent='¡Muy bien! ✓';$('status').className='status ok';$('mainBtn').textContent='Siguiente';$('solutionBtn').disabled=true;commitRecord();completedThisSession++;updateCounter()}else{$('status').textContent='Revisa las casillas en rojo';$('status').className='status error'}return ok}
+function fillSolution(){const ans=expectedMap();document.querySelectorAll('#math [data-type="answer"]').forEach(inp=>{inp.value=ans[+inp.dataset.index]??'';inp.classList.remove('bad');inp.classList.add('good')});if(current.op==='add'||current.op==='mul'){const type=current.op==='add'?'addcarry':'mulcarry';document.querySelectorAll(`[data-type="${type}"]`).forEach(inp=>{if(!inp.disabled){inp.value=current.carries[+inp.dataset.index]?String(current.carries[+inp.dataset.index]):'';inp.classList.add('good')}})}else if(current.op==='sub'){document.querySelectorAll('[data-type="borrow"]').forEach(inp=>{inp.value=current.borrowTop[+inp.dataset.index]?'1':'';inp.classList.add('good')});document.querySelectorAll('[data-type="bottomreplacement"]').forEach(inp=>{const repl=current.bottomReplacement[+inp.dataset.index];inp.value=repl===null?'':String(repl);inp.classList.add('good');const original=$('bottom-'+inp.dataset.index);if(original)original.classList.toggle('changed',repl!==null)})}record.solutionUsed=true;exerciseSolved=true;$('status').textContent='Respuesta mostrada';$('status').className='status ok';$('mainBtn').textContent='Siguiente';$('solutionBtn').disabled=true;resetReveal();commitRecord();completedThisSession++;updateCounter()}
+function commitRecord(){if(!record||!currentUser)return;record.completedAt=new Date().toISOString();db.users[currentUser].history.push(record);saveDB();record=null}
+function resetReveal(){revealConfirm=false;$('solutionBtn').textContent='Ver respuesta';$('solutionBtn').classList.remove('confirm')}
+function updateCounter(){$('counter').textContent=`Hechas: ${completedThisSession} · Total: ${totalDone(currentUser)}`}
+
+function infoHtml(){if(selectedOp==='add')return '<p><b>Sumas:</b> escribe las llevadas en las casillas pequeñas de arriba y el resultado debajo de la línea.</p><p>Los dos números pueden tener distinto número de cifras; se alinean por la derecha.</p>';if(selectedOp==='sub')return '<p><b>Restas:</b> si no puedes restar, escribe un <b>1 arriba</b> para añadir 10.</p><p>Ese 1 pasa a la columna de la izquierda: <b>súmalo al número de abajo y escribe su nuevo valor</b>. El número anterior se tacha automáticamente.</p>';if(selectedOp==='mul')return '<p><b>Multiplicaciones:</b> por ahora trabajamos con un multiplicador de una cifra. Escribe las llevadas arriba y el resultado debajo.</p>';return '<p><b>Divisiones:</b> por ahora son divisiones exactas con divisor de una cifra. Escribe el cociente debajo del divisor.</p><p>En una siguiente versión podemos añadir el desarrollo completo de la división tradicional.</p>'}
+function renderHistory(name){const hist=[...historyFor(name)].sort((a,b)=>new Date(b.date)-new Date(a.date));$('historyUser').textContent=name?`${name} · últimos ${RETENTION_DAYS} días`:'Selecciona un usuario';if(!name||!db.users[name]){$('stats').innerHTML='';$('historyList').innerHTML='<div class="empty">No hay un usuario seleccionado.</div>';$('clearHistory').style.display='none';return}$('clearHistory').style.display='inline-block';const total=hist.length,firstTry=hist.filter(x=>x.attempts?.length===1&&x.attempts[0].correct&&!x.solutionUsed).length,solutions=hist.filter(x=>x.solutionUsed).length;$('stats').innerHTML=`<div class="stat"><b>${total}</b><span>ejercicios</span></div><div class="stat"><b>${firstTry}</b><span>a la primera</span></div><div class="stat"><b>${solutions}</b><span>con respuesta</span></div>`;if(!hist.length){$('historyList').innerHTML='<div class="empty">Todavía no hay ejercicios guardados.</div>';return}$('historyList').innerHTML=hist.map(x=>{const dt=new Date(x.date),date=dt.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'})+' '+dt.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}),op=symbolOp(x.operation),tries=(x.attempts||[]).map((a,i)=>`<span class="tag ${a.correct?'oktag':'badtag'}">${i+1}: ${escapeHtml(a.answer)} ${a.correct?'✓':'✗'}</span>`).join(' '),sol=x.solutionUsed?'<span class="tag">vio respuesta</span>':'';return `<div class="history-item"><div class="history-top"><div><div class="expression">${x.a} ${op} ${x.b} = ${x.result}</div><span class="tag">${labelOp(x.operation)}</span></div><div class="date">${date}</div></div><div class="attempts">${tries||'<span class="tag">sin correcciones</span>'} ${sol}</div></div>`}).join('')}
+function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+
+$('startBtn').onclick=()=>{if(!currentUser||!db.users[currentUser]){$('newUserRow').classList.add('show');$('newUserName').focus();return}completedThisSession=0;updateCounter();showScreen('exerciseScreen');newExercise()};
+$('backBtn').onclick=()=>{showScreen('configScreen');renderUsers()};
+$('mainBtn').onclick=()=>exerciseSolved?newExercise():grade();
+$('solutionBtn').onclick=()=>{if(!revealConfirm){revealConfirm=true;$('solutionBtn').textContent='¿Seguro?';$('solutionBtn').classList.add('confirm');setTimeout(()=>{if(revealConfirm)resetReveal()},4000)}else fillSolution()};
+$('infoBtn').onclick=()=>{$('infoText').innerHTML=infoHtml();$('infoModal').classList.add('show')};$('closeInfo').onclick=()=>$('infoModal').classList.remove('show');$('infoModal').onclick=e=>{if(e.target===$('infoModal'))$('infoModal').classList.remove('show')};
+$('historyBtn').onclick=()=>{renderHistory(currentUser);$('historyModal').classList.add('show')};$('closeHistory').onclick=()=>$('historyModal').classList.remove('show');$('historyModal').onclick=e=>{if(e.target===$('historyModal'))$('historyModal').classList.remove('show')};$('clearHistory').onclick=()=>{if(!currentUser||!db.users[currentUser])return;if(confirm(`¿Borrar todo el historial de ${currentUser}?`)){db.users[currentUser].history=[];saveDB();renderHistory(currentUser);updateUserSummary()}};
+
+/* Instalación y actualizaciones PWA */
+let deferredInstallPrompt=null,swRegistration=null,refreshing=false;
+window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();deferredInstallPrompt=event;$('installBtn').style.display='block'});
+$('installBtn').onclick=async()=>{if(!deferredInstallPrompt)return;deferredInstallPrompt.prompt();try{await deferredInstallPrompt.userChoice}finally{deferredInstallPrompt=null;$('installBtn').style.display='none'}};
+function showUpdate(){if(navigator.serviceWorker.controller)$('updateBanner').classList.add('show')}
+$('updateBtn').onclick=()=>{if(swRegistration?.waiting)swRegistration.waiting.postMessage({type:'SKIP_WAITING'})};
+if('serviceWorker'in navigator){window.addEventListener('load',async()=>{try{swRegistration=await navigator.serviceWorker.register('./service-worker.js');if(swRegistration.waiting)showUpdate();swRegistration.addEventListener('updatefound',()=>{const nw=swRegistration.installing;nw?.addEventListener('statechange',()=>{if(nw.state==='installed'&&navigator.serviceWorker.controller)showUpdate()})});swRegistration.update().catch(()=>{})}catch(e){}});navigator.serviceWorker.addEventListener('controllerchange',()=>{if(refreshing)return;refreshing=true;location.reload()});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')swRegistration?.update().catch(()=>{})})}
+
+renderUsers();renderSettings();
 </script>
 </body>
 </html>
