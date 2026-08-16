@@ -331,7 +331,7 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
 
     <div id="userList" class="user-list"></div>
     <button id="newUserBtn" class="new-user-button">+ Crear nuevo usuario</button>
-    <p class="app-version">Versión 13.2 beta</p>
+    <p class="app-version">Versión 13.3 beta</p>
 
     <div id="newUserRow" class="new-user-row">
       <input id="newUserName" type="text" maxlength="24" placeholder="Nombre">
@@ -1010,14 +1010,14 @@ function renderDivision(host){
   }
   right.append(divisor,q);
   current.divisionSteps.forEach((step,stepIndex)=>{
-    const product=String(step.product),productRow=2+stepIndex*3,endColumn=step.column+1;
+    const product=String(step.product),productRow=2+stepIndex*2,endColumn=step.column+1;
     const minus=makeText(left,productRow,Math.max(1,endColumn-product.length),'−','division-minus');minus.dataset.reveal='product';minus.dataset.step=stepIndex;
     product.split('').forEach((_,digitIndex)=>{
       const inp=document.createElement('input');inp.className='division-work-input';inp.inputMode='numeric';inp.maxLength=1;inp.autocomplete='off';inp.dataset.type='divproduct';inp.dataset.index=`${stepIndex}-${digitIndex}`;inp.style.gridRow=productRow;inp.style.gridColumn=endColumn-product.length+digitIndex+1;
       inp.dataset.step=stepIndex;inp.addEventListener('input',()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);inp.classList.remove('good','bad');onEdit();updateDivisionProgress()});left.appendChild(inp);
     });
-    const rule=document.createElement('div');rule.className='division-sub-rule';rule.dataset.reveal='product';rule.dataset.step=stepIndex;rule.style.gridRow=productRow+1;rule.style.gridColumn=`${Math.max(1,endColumn-product.length)} / ${endColumn+1}`;left.appendChild(rule);
-    const remainder=String(step.remainder),remainderRow=productRow+2;
+    const rule=document.createElement('div');rule.className='division-sub-rule';rule.dataset.reveal='product';rule.dataset.step=stepIndex;rule.style.gridRow=productRow;rule.style.gridColumn=`${Math.max(1,endColumn-product.length)} / ${endColumn+1}`;left.appendChild(rule);
+    const remainder=String(step.remainder),remainderRow=productRow+1;
     remainder.split('').forEach((_,digitIndex)=>{
       const inp=document.createElement('input');inp.className='division-work-input';inp.inputMode='numeric';inp.maxLength=1;inp.autocomplete='off';inp.dataset.type='divremainder';inp.dataset.index=`${stepIndex}-${digitIndex}`;inp.style.gridRow=remainderRow;inp.style.gridColumn=Math.max(1,endColumn-remainder.length+digitIndex+1);
       inp.dataset.step=stepIndex;inp.addEventListener('input',()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);inp.classList.remove('good','bad');onEdit();updateDivisionProgress()});left.appendChild(inp);
