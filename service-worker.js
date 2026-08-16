@@ -1,4 +1,4 @@
-const CACHE_NAME = 'matematicas-tradicionales-v17-1-beta';
+const CACHE_NAME = 'matematicas-tradicionales-v17-2-beta';
 const APP_FILES = [
   './',
   './index.html',
@@ -10,7 +10,7 @@ const APP_FILES = [
 ];
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_FILES)));
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_FILES)).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', event => {
@@ -30,8 +30,9 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
 
   const isPage = event.request.mode === 'navigate' || event.request.url.endsWith('/index.html');
+  const isCriticalAsset = event.request.url.endsWith('/app.js') || event.request.url.endsWith('/styles.css');
 
-  if (isPage) {
+  if (isPage || isCriticalAsset) {
     event.respondWith(
       fetch(event.request)
         .then(response => {
