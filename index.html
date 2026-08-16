@@ -332,7 +332,7 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
 
     <div id="userList" class="user-list"></div>
     <button id="newUserBtn" class="new-user-button">+ Crear nuevo usuario</button>
-    <p class="app-version">Versión 14 beta</p>
+    <p class="app-version">Versión 14.1 beta</p>
 
     <div id="newUserRow" class="new-user-row">
       <input id="newUserName" type="text" maxlength="24" placeholder="Nombre">
@@ -912,8 +912,8 @@ function renderMultiplication(host){
     row.style.setProperty('--mul-columns',columns);
 
     if(step.topIndex===0){const label=document.createElement('div');label.className='mul-step-label';label.textContent=`×${step.multiplierDigit}`;row.appendChild(label)}
-    const product=String(step.product);
-    const startColumn=columns+2-step.topIndex-step.multiplierIndex-product.length;
+    const product=String(step.product).padStart(2,' ');
+    const startColumn=columns-step.topIndex-step.multiplierIndex;
     product.split('').forEach((_,digitIndex)=>{
       const inp=document.createElement('input');
       inp.className='mul-step-input';
@@ -1115,7 +1115,7 @@ function grade(){
     });
   }else if(current.op==='mul'){
     document.querySelectorAll('[data-type="mulstep"]').forEach(inp=>{
-      const exp=String(current.stepProducts[+inp.dataset.step])[+inp.dataset.digit];
+      const exp=String(current.stepProducts[+inp.dataset.step]).padStart(2,' ')[+inp.dataset.digit].trim();
       const good=inp.value===exp;
       inp.classList.add(good?'good':'bad');
       if(!good)ok=false;
@@ -1184,7 +1184,7 @@ function fillSolution(){
     });
   }else if(current.op==='mul'){
     document.querySelectorAll('[data-type="mulstep"]').forEach(inp=>{
-      inp.value=String(current.stepProducts[+inp.dataset.step])[+inp.dataset.digit];
+      inp.value=String(current.stepProducts[+inp.dataset.step]).padStart(2,' ')[+inp.dataset.digit].trim();
       inp.classList.remove('bad');
       inp.classList.add('good');
     });
