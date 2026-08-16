@@ -50,13 +50,21 @@ test('objetivos por sesión diaria y semanal', () => {
 });
 
 test('la PWA mantiene los recursos esenciales', () => {
-  for (const file of ['./', './index.html', './styles.css', './app.js', './manifest.webmanifest', './icon-192.png', './icon-512.png']) {
+  for (const file of ['./', './index.html', './styles.css?v=17.6', './app.js?v=17.6', './manifest.webmanifest', './icon-192.png', './icon-512.png']) {
     assert.ok(sw.includes(`'${file}'`), `Falta ${file} en la caché`);
   }
 });
 
 test('HTML carga estilos y lógica separados', () => {
-  assert.match(html, /href="styles\.css\?v=17\.5"/);
-  assert.match(html, /src="app\.js\?v=17\.5"/);
+  assert.match(html, /href="styles\.css\?v=17\.6"/);
+  assert.match(html, /src="app\.js\?v=17\.6"/);
   assert.doesNotMatch(html, /<style>/);
+});
+
+test('muestra el estado sin conexión y conserva actualización al volver', () => {
+  assert.match(html, /offlineBadge/);
+  assert.match(app, /navigator\.onLine/);
+  assert.match(app, /addEventListener\('offline'/);
+  assert.match(app, /addEventListener\('online'/);
+  assert.match(sw, /caches\.match/);
 });

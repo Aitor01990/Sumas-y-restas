@@ -1056,6 +1056,10 @@ $('clearHistory').onclick=()=>{
 
 /* Instalación y actualizaciones PWA */
 let deferredInstallPrompt=null,swRegistration=null,refreshing=false;
+function updateConnectionStatus(){$('offlineBadge').classList.toggle('show',!navigator.onLine)}
+window.addEventListener('online',()=>{updateConnectionStatus();swRegistration?.update().catch(()=>{})});
+window.addEventListener('offline',updateConnectionStatus);
+updateConnectionStatus();
 window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();deferredInstallPrompt=event});
 function showUpdate(){if(navigator.serviceWorker.controller)$('updateBanner').classList.add('show')}
 $('updateBtn').onclick=()=>{if(swRegistration?.waiting)swRegistration.waiting.postMessage({type:'SKIP_WAITING'})};

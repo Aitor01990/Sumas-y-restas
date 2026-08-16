@@ -1,9 +1,9 @@
-const CACHE_NAME = 'matematicas-tradicionales-v17-5-beta';
+const CACHE_NAME = 'matematicas-tradicionales-v17-6-beta';
 const APP_FILES = [
   './',
   './index.html',
-  './styles.css',
-  './app.js',
+  './styles.css?v=17.6',
+  './app.js?v=17.6',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png'
@@ -30,7 +30,8 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
 
   const isPage = event.request.mode === 'navigate' || event.request.url.endsWith('/index.html');
-  const isCriticalAsset = event.request.url.endsWith('/app.js') || event.request.url.endsWith('/styles.css');
+  const pathname = new URL(event.request.url).pathname;
+  const isCriticalAsset = pathname.endsWith('/app.js') || pathname.endsWith('/styles.css');
 
   if (isPage || isCriticalAsset) {
     event.respondWith(
