@@ -219,6 +219,7 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
   margin-top:12px;
 }
 .selected-user-box b{color:var(--text)}
+.addition-math{grid-template-columns:var(--cell) repeat(var(--digits),var(--cell))}
 @media(max-width:420px){
   .operation-choice{min-height:116px}
   .operation-choice .big-symbol{width:52px;height:52px;font-size:33px}
@@ -324,7 +325,7 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
 
     <div id="userList" class="user-list"></div>
     <button id="newUserBtn" class="new-user-button">+ Crear nuevo usuario</button>
-    <p class="app-version">Versión 12.2 beta</p>
+    <p class="app-version">Versión 12.3 beta</p>
 
     <div id="newUserRow" class="new-user-row">
       <input id="newUserName" type="text" maxlength="24" placeholder="Nombre">
@@ -776,7 +777,7 @@ function renderExercise(){
 
 function renderAddition(host){
   const n=current.n,grid=document.createElement('div');
-  grid.className='math';
+  grid.className='math addition-math';
   grid.style.setProperty('--digits',n);
   host.appendChild(grid);
   let row=1;
