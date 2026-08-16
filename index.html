@@ -106,6 +106,13 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
   color:#1d4ed8;
   font-weight:900;
 }
+.app-version{
+  margin:9px 0 0;
+  text-align:center;
+  color:var(--muted);
+  font-size:11px;
+  font-weight:750;
+}
 .operation-choice-grid{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -219,44 +226,53 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
 }
 
 
-/* V10 - suma con varios sumandos y multiplicación desarrollada */
+/* V11 - suma con varios sumandos y multiplicación visual escalonada */
 .mul-process{
-  width:min(460px,100%);
+  width:min(420px,100%);
   display:grid;
-  gap:11px;
-}
-.mul-original{
-  display:flex;
-  justify-content:center;
-  align-items:flex-end;
-  gap:12px;
-  font-family:"Courier New",monospace;
-  font-weight:800;
-  font-size:34px;
-  padding:4px 0 7px;
-  border-bottom:3px solid var(--text);
-}
-.mul-original .mul-sign{font-size:27px;padding-bottom:2px}
-.mul-steps{
-  display:grid;
-  gap:7px;
-  padding:2px 0 5px;
-}
-.mul-step{
-  display:grid;
-  grid-template-columns:1fr 64px;
-  align-items:center;
   gap:8px;
+  justify-items:center;
 }
-.mul-step-label{
-  text-align:right;
+.mul-paper{
+  --mul-cell:46px;
+  display:grid;
+  grid-template-columns:28px repeat(var(--mul-columns),var(--mul-cell));
+  grid-auto-rows:auto;
+  justify-content:center;
+  align-items:center;
   font-family:"Courier New",monospace;
-  font-size:20px;
   font-weight:800;
+  font-variant-numeric:tabular-nums;
+}
+.mul-number{
+  grid-column:2/-1;
+  text-align:right;
+  font-size:39px;
+  line-height:1.12;
+  padding-right:5px;
+}
+.mul-multiplier{
+  grid-column:1/-1;
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  gap:12px;
+  font-size:39px;
+  line-height:1.12;
+  padding-right:5px;
+}
+.mul-multiplier .mul-sign{font-size:30px}
+.mul-rule{
+  grid-column:1/-1;
+  height:3px;
+  background:var(--text);
+  border-radius:3px;
+  margin:3px 0 8px;
 }
 .mul-step-input{
-  width:64px;
-  height:43px;
+  width:70px;
+  height:45px;
+  justify-self:end;
   border:2px solid #98a2b3;
   border-radius:10px;
   text-align:center;
@@ -264,40 +280,14 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
   font-size:25px;
   font-weight:800;
 }
-.mul-sum-title{
-  text-align:center;
-  color:var(--muted);
-  font-size:12px;
-  font-weight:850;
-  text-transform:uppercase;
-  letter-spacing:.05em;
-  margin-top:2px;
-}
-.partial-sum{
-  width:max-content;
-  min-width:160px;
-  margin:0 auto;
-  font-family:"Courier New",monospace;
-  font-size:25px;
-  font-weight:800;
-}
-.partial-row{
-  min-height:31px;
+.mul-step-row{
+  grid-column:1/-1;
   display:flex;
   justify-content:flex-end;
-  align-items:center;
-}
-.partial-row.last::before{
-  content:"+";
-  margin-right:13px;
-}
-.partial-rule{
-  height:3px;
-  background:var(--text);
-  margin:2px 0 7px;
-  border-radius:3px;
+  padding-right:calc(var(--step) * var(--mul-cell));
 }
 .mul-final{
+  grid-column:1/-1;
   display:flex;
   justify-content:flex-end;
   gap:3px;
@@ -307,6 +297,11 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
   height:48px;
   font-size:29px;
 }
+.mul-order-note{
+  color:var(--muted);
+  font-size:11px;
+  text-align:center;
+}
 .addend-note{
   text-align:center;
   color:var(--muted);
@@ -314,10 +309,9 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
   margin-top:5px;
 }
 @media(max-width:420px){
-  .mul-original{font-size:31px}
-  .mul-step-label{font-size:18px}
-  .mul-step-input{width:60px;height:41px;font-size:23px}
-  .partial-sum{font-size:23px}
+  .mul-paper{--mul-cell:42px}
+  .mul-number,.mul-multiplier{font-size:36px}
+  .mul-step-input{width:64px;height:42px;font-size:23px}
 }
 
 </style>
@@ -335,6 +329,7 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
 
     <div id="userList" class="user-list"></div>
     <button id="newUserBtn" class="new-user-button">+ Crear nuevo usuario</button>
+    <p class="app-version">Versión 12</p>
 
     <div id="newUserRow" class="new-user-row">
       <input id="newUserName" type="text" maxlength="24" placeholder="Nombre">
@@ -586,8 +581,8 @@ function mulCarries(a,m,n){
 function matchCarry(any,mode){return mode==='mix'||(mode==='yes'?any:!any)}
 
 const SUM_PRESETS=[
-  ['2x2',2,2],['3x2',3,2],['3x3',3,3],['4x2',4,2],
-  ['4x3',4,3],['4x4',4,4],['5x3',5,3],['5x5',5,5]
+  ['2x2',2,2],['3x2',3,2],['3x3',3,3],
+  ['4x3',4,3],['4x4',4,4]
 ];
 
 function chooseOperation(op){
@@ -705,8 +700,8 @@ function newExercise(){
     a=rint(min,max);b=rint(2,9);
     result=a*b;
     const A=digitsOf(a,n);
-    meta.stepProducts=A.map(d=>d*b);
-    meta.shiftedPartials=A.map((d,i)=>(d*b)*(10**(n-1-i)));
+    meta.stepDigits=[...A].reverse();
+    meta.stepProducts=meta.stepDigits.map(d=>d*b);
   }else{
     const s=settingsState.div;
     if(s.preset==='basic'){
@@ -822,22 +817,29 @@ function renderMultiplication(host){
   wrap.className='mul-process';
   host.appendChild(wrap);
 
-  const original=document.createElement('div');
-  original.className='mul-original';
-  original.innerHTML=`<span>${current.a}</span><span class="mul-sign">×</span><span>${current.b}</span>`;
-  wrap.appendChild(original);
+  const paper=document.createElement('div');
+  paper.className='mul-paper';
+  paper.style.setProperty('--mul-columns',Math.max(current.n+1,String(current.result).length));
+  wrap.appendChild(paper);
 
-  const steps=document.createElement('div');
-  steps.className='mul-steps';
-  const A=digitsOf(current.a,current.n);
+  const top=document.createElement('div');
+  top.className='mul-number';
+  top.textContent=current.a;
+  paper.appendChild(top);
 
-  A.forEach((digit,i)=>{
+  const multiplier=document.createElement('div');
+  multiplier.className='mul-multiplier';
+  multiplier.innerHTML=`<span class="mul-sign">×</span><span>${current.b}</span>`;
+  paper.appendChild(multiplier);
+
+  const topRule=document.createElement('div');
+  topRule.className='mul-rule';
+  paper.appendChild(topRule);
+
+  current.stepDigits.forEach((digit,i)=>{
     const row=document.createElement('div');
-    row.className='mul-step';
-
-    const label=document.createElement('div');
-    label.className='mul-step-label';
-    label.textContent=`${digit} × ${current.b} =`;
+    row.className='mul-step-row';
+    row.style.setProperty('--step',i);
 
     const inp=document.createElement('input');
     inp.className='mul-step-input';
@@ -846,40 +848,20 @@ function renderMultiplication(host){
     inp.autocomplete='off';
     inp.dataset.type='mulstep';
     inp.dataset.index=i;
+    inp.setAttribute('aria-label',`${digit} por ${current.b}`);
+    inp.title=`${digit} × ${current.b}`;
     inp.addEventListener('input',()=>{
       inp.value=inp.value.replace(/\D/g,'').slice(0,2);
       inp.classList.remove('good','bad');
       onEdit();
-      updateMulPartials();
     });
-
-    row.append(label,inp);
-    steps.appendChild(row);
-  });
-  wrap.appendChild(steps);
-
-  if(current.n>1){
-    const title=document.createElement('div');
-    title.className='mul-sum-title';
-    title.textContent='Ahora suma los resultados';
-    wrap.appendChild(title);
-  }
-
-  const sum=document.createElement('div');
-  sum.className='partial-sum';
-  sum.id='partialSum';
-
-  current.shiftedPartials.forEach((_,i)=>{
-    const row=document.createElement('div');
-    row.className='partial-row'+(i===current.shiftedPartials.length-1?' last':'');
-    row.dataset.partialIndex=i;
-    row.textContent='—';
-    sum.appendChild(row);
+    row.appendChild(inp);
+    paper.appendChild(row);
   });
 
   const rule=document.createElement('div');
-  rule.className='partial-rule';
-  sum.appendChild(rule);
+  rule.className='mul-rule';
+  paper.appendChild(rule);
 
   const final=document.createElement('div');
   final.className='mul-final';
@@ -900,22 +882,13 @@ function renderMultiplication(host){
     });
     final.appendChild(inp);
   }
-  sum.appendChild(final);
-  wrap.appendChild(sum);
-  setTimeout(()=>steps.querySelector('input')?.focus(),0);
-}
+  paper.appendChild(final);
 
-function updateMulPartials(){
-  if(current.op!=='mul')return;
-  const rows=[...document.querySelectorAll('[data-partial-index]')];
-  const inputs=[...document.querySelectorAll('[data-type="mulstep"]')];
-  rows.forEach((row,i)=>{
-    const raw=inputs[i]?.value||'';
-    if(raw===''){row.textContent='—';return}
-    const place=current.n-1-i;
-    const value=(+raw)*(10**place);
-    row.textContent=String(value);
-  });
+  const note=document.createElement('div');
+  note.className='mul-order-note';
+  note.textContent='Empieza por la cifra de la derecha';
+  wrap.appendChild(note);
+  setTimeout(()=>paper.querySelector('[data-type="mulstep"]')?.focus(),0);
 }
 function renderDivision(host){const board=document.createElement('div');board.className='division-board';const dividend=document.createElement('div');dividend.className='dividend';dividend.textContent=current.a;const right=document.createElement('div');right.className='div-right';const divisor=document.createElement('div');divisor.className='divisor';divisor.textContent=current.b;const q=document.createElement('div');q.className='quotient-inputs';String(current.result).split('').forEach((_,i)=>{const inp=document.createElement('input');inp.className='answer';inp.inputMode='numeric';inp.maxLength=1;inp.dataset.type='answer';inp.dataset.index=i;inp.addEventListener('input',()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);inp.classList.remove('good','bad');onEdit()});q.appendChild(inp)});right.append(divisor,q);board.append(dividend,right);host.appendChild(board);const note=document.createElement('div');note.className='division-note';note.textContent='División exacta · escribe el cociente';host.appendChild(note);setTimeout(focusLast,0)}
 function focusLast(){const arr=[...document.querySelectorAll('#math .answer')];if(arr.length)arr[arr.length-1].focus()}
@@ -1032,9 +1005,9 @@ function fillSolution(){
   }else if(current.op==='mul'){
     document.querySelectorAll('[data-type="mulstep"]').forEach(inp=>{
       inp.value=String(current.stepProducts[+inp.dataset.index]);
+      inp.classList.remove('bad');
       inp.classList.add('good');
     });
-    updateMulPartials();
   }else if(current.op==='sub'){
     document.querySelectorAll('[data-type="borrow"]').forEach(inp=>{
       inp.value=current.borrowTop[+inp.dataset.index]?'1':'';
@@ -1067,7 +1040,7 @@ function updateCounter(){$('counter').textContent=`Hechas: ${completedThisSessio
 function infoHtml(){
   if(selectedOp==='add')return '<p><b>Sumas:</b> escribe las llevadas en las casillas pequeñas de arriba y el resultado debajo de la línea.</p><p>Los números pueden tener distinta cantidad de cifras y se alinean por la derecha.</p>';
   if(selectedOp==='sub')return '<p><b>Restas:</b> si no puedes restar, escribe un <b>1 arriba</b> para añadir 10.</p><p>Ese 1 pasa a la columna de la izquierda: <b>súmalo al número de abajo y escribe su nuevo valor</b>. El número anterior se tacha automáticamente.</p>';
-  if(selectedOp==='mul')return '<p><b>Multiplicaciones:</b> calcula cada cifra por separado. Por ejemplo, en 666 × 2, escribe 12, 12 y 12.</p><p>Después esos resultados se colocan según unidades, decenas y centenas (12, 120 y 1200) y haces la suma final.</p>';
+  if(selectedOp==='mul')return '<p><b>Multiplicaciones:</b> empieza por la cifra de la derecha y calcula cada cifra por separado. Por ejemplo, en 666 × 2, escribe 12, 12 y 12.</p><p>Las casillas se colocan escalonadas para mostrar su posición. Después escribe el resultado final debajo de la línea.</p>';
   return '<p><b>Divisiones:</b> de momento son divisiones exactas y sencillas, con divisor de una cifra.</p><p>Más adelante añadiremos el desarrollo completo de la división tradicional.</p>';
 }
 function renderHistory(name){const hist=[...historyFor(name)].sort((a,b)=>new Date(b.date)-new Date(a.date));$('historyUser').textContent=name?`${name} · últimos ${RETENTION_DAYS} días`:'Selecciona un usuario';if(!name||!db.users[name]){$('stats').innerHTML='';$('historyList').innerHTML='<div class="empty">No hay un usuario seleccionado.</div>';$('clearHistory').style.display='none';return}$('clearHistory').style.display='inline-block';const total=hist.length,firstTry=hist.filter(x=>x.attempts?.length===1&&x.attempts[0].correct&&!x.solutionUsed).length,solutions=hist.filter(x=>x.solutionUsed).length;$('stats').innerHTML=`<div class="stat"><b>${total}</b><span>ejercicios</span></div><div class="stat"><b>${firstTry}</b><span>a la primera</span></div><div class="stat"><b>${solutions}</b><span>con respuesta</span></div>`;if(!hist.length){$('historyList').innerHTML='<div class="empty">Todavía no hay ejercicios guardados.</div>';return}$('historyList').innerHTML=hist.map(x=>{const dt=new Date(x.date),date=dt.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'})+' '+dt.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}),op=symbolOp(x.operation),tries=(x.attempts||[]).map((a,i)=>`<span class="tag ${a.correct?'oktag':'badtag'}">${i+1}: ${escapeHtml(a.answer)} ${a.correct?'✓':'✗'}</span>`).join(' '),sol=x.solutionUsed?'<span class="tag">vio respuesta</span>':'';return `<div class="history-item"><div class="history-top"><div><div class="expression">${x.operation==='add'&&x.operands?.length?x.operands.join(' + '):`${x.a} ${op} ${x.b}`} = ${x.result}</div><span class="tag">${labelOp(x.operation)}</span></div><div class="date">${date}</div></div><div class="attempts">${tries||'<span class="tag">sin correcciones</span>'} ${sol}</div></div>`}).join('')}
