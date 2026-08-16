@@ -282,6 +282,7 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
   display:grid;
   grid-template-columns:28px repeat(var(--mul-columns),var(--mul-cell));
 }
+.mul-step-label{grid-column:1;display:grid;place-items:center;font-size:12px;color:var(--muted);font-weight:900}
 .mul-final{
   grid-column:1/-1;
   display:grid;
@@ -331,7 +332,7 @@ h1{margin:0;font-size:clamp(27px,7vw,38px);line-height:1.05}.subtitle{margin:4px
 
     <div id="userList" class="user-list"></div>
     <button id="newUserBtn" class="new-user-button">+ Crear nuevo usuario</button>
-    <p class="app-version">Versión 13.3 beta</p>
+    <p class="app-version">Versión 14 beta</p>
 
     <div id="newUserRow" class="new-user-row">
       <input id="newUserName" type="text" maxlength="24" placeholder="Nombre">
@@ -418,9 +419,9 @@ let db=loadDB();
 let currentUser='';
 let selectedOp='add';
 let settingsState={
-  add:{preset:'3x3',digits:3,count:3,carry:'yes'},
+  add:{digits:3,count:3,carry:'yes'},
   sub:{digits:3,carry:'yes'},
-  mul:{preset:'1x1',top:1,carry:'mix'},
+  mul:{multiplicandDigits:2,multiplierDigits:1},
   div:{dividendDigits:2,divisorDigits:1,resultType:'integer'}
 };
 let current=null,record=null,completedThisSession=0,exerciseSolved=false,revealConfirm=false;
@@ -523,16 +524,17 @@ function randomComposition(total,count,minEach=0){
 }
 
 function generateNoCarryAddends(digits,count){
+  const lengths=Array.from({length:count},()=>rint(1,digits));lengths[rint(0,count-1)]=digits;
   const columns=[];
   for(let col=0;col<digits;col++){
-    const minEach=col===0?1:0;
-    const minTotal=minEach*count;
-    const target=rint(minTotal,9);
-    const vals=randomComposition(target,count,minEach);
-    // mezclar para no favorecer siempre al primer sumando
-    for(let i=vals.length-1;i>0;i--){
-      const j=rint(0,i);[vals[i],vals[j]]=[vals[j],vals[i]];
-    }
+    const vals=Array(count).fill(0),active=[];
+    for(let row=0;row<count;row++)if(lengths[row]>=digits-col)active.push(row);
+    let remaining=9;
+    active.forEach((row,pos)=>{
+      const leading=lengths[row]===digits-col,min=leading?1:0;
+      const futureMin=active.slice(pos+1).filter(r=>lengths[r]===digits-col).length;
+      vals[row]=rint(min,Math.max(min,remaining-futureMin));remaining-=vals[row];
+    });
     columns.push(vals);
   }
   const nums=Array(count).fill(0);
@@ -546,10 +548,11 @@ function generateNoCarryAddends(digits,count){
 
 function generateAddends(digits,count,carryMode){
   if(carryMode==='no')return generateNoCarryAddends(digits,count);
-  const [min,max]=exactDigits(digits);
+  const [,max]=exactDigits(digits),minFull=10**(digits-1);
   let nums,meta,tries=0;
   do{
-    nums=Array.from({length:count},()=>rint(min,max));
+    nums=Array.from({length:count},()=>rint(1,max));
+    nums[rint(0,count-1)]=rint(minFull,max);
     meta=addCarries(nums,digits);
     tries++;
   }while(!meta.any&&tries<30000);
@@ -582,11 +585,6 @@ function mulCarries(a,m,n){
 }
 function matchCarry(any,mode){return mode==='mix'||(mode==='yes'?any:!any)}
 
-const SUM_PRESETS=[
-  ['2x2',2,2],['3x2',3,2],['3x3',3,3],
-  ['4x3',4,3],['4x4',4,4]
-];
-
 function chooseOperation(op){
   selectedOp=op;
   $('difficultyTitle').textContent=({add:'Sumas',sub:'Restas',mul:'Multiplicaciones',div:'Divisiones'})[op];
@@ -604,19 +602,20 @@ function renderDifficulty(){
   if(selectedOp==='add'){
     const s=settingsState.add;
     host.innerHTML=`
-      <div class="section-title" style="margin-top:0">Cifras y números</div>
+      <div class="section-title" style="margin-top:0">Máximo de columnas</div>
       <div class="level-grid">
-        ${SUM_PRESETS.map(([key,d,c])=>levelButton(key,`${d} cifras × ${c} líneas`,`${c} números de ${d} cifras`,s.preset===key)).join('')}
+        ${[2,3,4,5].map(d=>levelButton(`d${d}`,`${d} columnas`,'',s.digits===d)).join('')}
+      </div>
+      <div class="section-title">Número de líneas</div>
+      <div class="level-grid">
+        ${[2,3,4].map(c=>levelButton(`c${c}`,`${c} líneas`,'',s.count===c)).join('')}
       </div>
       <div class="section-title">Llevadas</div>
       <div class="segment">
         <button data-carry="yes" class="${s.carry==='yes'?'active':''}">Con llevadas</button>
         <button data-carry="no" class="${s.carry==='no'?'active':''}">Sin llevadas</button>
       </div>`;
-    host.querySelectorAll('[data-key]').forEach(b=>b.onclick=()=>{
-      const p=SUM_PRESETS.find(x=>x[0]===b.dataset.key);
-      s.preset=p[0];s.digits=p[1];s.count=p[2];renderDifficulty();
-    });
+    host.querySelectorAll('[data-key]').forEach(b=>b.onclick=()=>{const key=b.dataset.key;if(key[0]==='d')s.digits=+key.slice(1);else s.count=+key.slice(1);renderDifficulty()});
     host.querySelectorAll('[data-carry]').forEach(b=>b.onclick=()=>{s.carry=b.dataset.carry;renderDifficulty()});
   }
 
@@ -638,21 +637,17 @@ function renderDifficulty(){
 
   if(selectedOp==='mul'){
     const s=settingsState.mul;
-    const levels=[
-      ['1x1',1,'1 cifra × 1 cifra','Tablas sencillas'],
-      ['2x1',2,'2 cifras × 1 cifra','Primeras multiplicaciones'],
-      ['3x1',3,'3 cifras × 1 cifra','Para más adelante']
-    ];
     host.innerHTML=`
-      <div class="section-title" style="margin-top:0">Nivel</div>
+      <div class="section-title" style="margin-top:0">Cifras del multiplicando (arriba)</div>
       <div class="level-grid">
-        ${levels.map(([k,d,l,sub])=>levelButton(k,l,sub,s.preset===k)).join('')}
+        ${[1,2,3,4].map(d=>levelButton(`a${d}`,`${d} cifra${d===1?'':'s'}`,'',s.multiplicandDigits===d)).join('')}
       </div>
-      <div class="selected-user-box">De momento las multiplicaciones son por <b>una sola cifra</b>. Las iremos ampliando más adelante.</div>`;
-    host.querySelectorAll('[data-key]').forEach(b=>b.onclick=()=>{
-      const p=levels.find(x=>x[0]===b.dataset.key);
-      s.preset=p[0];s.top=p[1];renderDifficulty();
-    });
+      <div class="section-title">Cifras del multiplicador (abajo)</div>
+      <div class="level-grid">
+        ${[1,2,3].map(d=>levelButton(`b${d}`,`${d} cifra${d===1?'':'s'}`,'',s.multiplierDigits===d)).join('')}
+      </div>
+      <div class="selected-user-box">Cada cifra se multiplica por separado, empezando por la derecha.</div>`;
+    host.querySelectorAll('[data-key]').forEach(btn=>btn.onclick=()=>{const key=btn.dataset.key;if(key[0]==='a')s.multiplicandDigits=+key.slice(1);else s.multiplierDigits=+key.slice(1);renderDifficulty()});
   }
 
   if(selectedOp==='div'){
@@ -754,8 +749,6 @@ function newExercise(){
 
   if(op==='add'){
     const s=settingsState.add;
-    const preset=SUM_PRESETS.find(x=>x[0]===s.preset)||SUM_PRESETS[2];
-    s.digits=preset[1];s.count=preset[2];
     n=s.digits;
     operands=generateAddends(s.digits,s.count,s.carry);
     meta=addCarries(operands,n);
@@ -771,13 +764,14 @@ function newExercise(){
     }while(!matchCarry(meta.any,s.carry)&&tries<30000);
     result=a-b;meta.carryMode=s.carry;
   }else if(op==='mul'){
-    const s=settingsState.mul,[min,max]=exactDigits(s.top);
-    n=s.top;
-    a=rint(min,max);b=rint(2,9);
+    const s=settingsState.mul,[amin,amax]=exactDigits(s.multiplicandDigits),[bmin,bmax]=exactDigits(s.multiplierDigits);
+    n=s.multiplicandDigits;
+    a=rint(amin,amax);b=rint(bmin,bmax);
     result=a*b;
-    const A=digitsOf(a,n);
-    meta.stepDigits=[...A].reverse();
-    meta.stepProducts=meta.stepDigits.map(d=>d*b);
+    const topDigits=[...String(a)].reverse().map(Number),bottomDigits=[...String(b)].reverse().map(Number);
+    meta.mulSteps=[];
+    bottomDigits.forEach((multiplierDigit,multiplierIndex)=>topDigits.forEach((topDigit,topIndex)=>meta.mulSteps.push({topDigit,multiplierDigit,topIndex,multiplierIndex,product:topDigit*multiplierDigit})));
+    meta.stepProducts=meta.mulSteps.map(step=>step.product);
   }else{
     const s=settingsState.div;
     const generated=generateDivision(s);
@@ -855,11 +849,11 @@ function renderAddition(host){
   for(let i=0;i<n;i++)makeInput(grid,row,i+2,'addcarry',i,i<n-1,1);
   row++;
 
-  // Todos los sumandos: "3 × 3" = tres cifras y tres líneas.
+  // Las cifras son un máximo: los números más cortos quedan alineados a la derecha.
   current.operands.forEach((num,idx)=>{
-    const D=digitsOf(num,n);
+    const raw=String(num),offset=n-raw.length;
     if(idx===current.operands.length-1)makeText(grid,row,1,'+','op');
-    for(let i=0;i<n;i++)makeText(grid,row,i+2,D[i]);
+    raw.split('').forEach((digit,i)=>makeText(grid,row,offset+i+2,digit));
     row++;
   });
 
@@ -872,7 +866,7 @@ function renderAddition(host){
 
   const note=document.createElement('div');
   note.className='addend-note';
-  note.textContent=`${current.operands.length} números de ${n} cifras`;
+  note.textContent=`${current.operands.length} líneas · hasta ${n} cifras por número`;
   host.appendChild(note);
   setTimeout(focusLast,0);
 }
@@ -884,7 +878,7 @@ function renderMultiplication(host){
 
   const paper=document.createElement('div');
   paper.className='mul-paper';
-  const columns=Math.max(current.n+1,String(current.result).length);
+  const columns=Math.max(String(current.a).length+String(current.b).length,String(current.result).length);
   paper.style.setProperty('--mul-columns',columns);
   wrap.appendChild(paper);
 
@@ -903,25 +897,23 @@ function renderMultiplication(host){
   sign.style.gridRow='2';
   paper.appendChild(sign);
 
-  const multiplier=document.createElement('div');
-  multiplier.className='mul-multiplier';
-  multiplier.textContent=current.b;
-  multiplier.style.gridColumn=String(columns+1);
-  multiplier.style.gridRow='2';
-  paper.appendChild(multiplier);
+  String(current.b).split('').forEach((digit,i)=>{
+    const multiplier=document.createElement('div');multiplier.className='mul-multiplier';multiplier.textContent=digit;multiplier.style.gridColumn=String(2+columns-String(current.b).length+i);multiplier.style.gridRow='2';paper.appendChild(multiplier);
+  });
 
   const topRule=document.createElement('div');
   topRule.className='mul-rule';
   paper.appendChild(topRule);
 
-  current.stepDigits.forEach((digit,i)=>{
+  current.mulSteps.forEach((step,i)=>{
     const row=document.createElement('div');
     row.className='mul-step-row';
     row.style.setProperty('--step',i);
     row.style.setProperty('--mul-columns',columns);
 
-    const product=String(current.stepProducts[i]);
-    const startColumn=columns+2-i-product.length;
+    if(step.topIndex===0){const label=document.createElement('div');label.className='mul-step-label';label.textContent=`×${step.multiplierDigit}`;row.appendChild(label)}
+    const product=String(step.product);
+    const startColumn=columns+2-step.topIndex-step.multiplierIndex-product.length;
     product.split('').forEach((_,digitIndex)=>{
       const inp=document.createElement('input');
       inp.className='mul-step-input';
@@ -932,8 +924,8 @@ function renderMultiplication(host){
       inp.dataset.step=i;
       inp.dataset.digit=digitIndex;
       inp.dataset.index=`${i}:${digitIndex}`;
-      inp.setAttribute('aria-label',`${digit} por ${current.b}, cifra ${digitIndex+1}`);
-      inp.title=`${digit} × ${current.b}`;
+      inp.setAttribute('aria-label',`${step.topDigit} por ${step.multiplierDigit}, cifra ${digitIndex+1}`);
+      inp.title=`${step.topDigit} × ${step.multiplierDigit}`;
       inp.style.gridColumn=String(startColumn+digitIndex);
       inp.addEventListener('input',()=>{
         inp.value=inp.value.replace(/\D/g,'').slice(-1);
@@ -974,7 +966,7 @@ function renderMultiplication(host){
 
   const note=document.createElement('div');
   note.className='mul-order-note';
-  note.textContent='Empieza por la cifra de la derecha';
+  note.textContent='Empieza por la cifra de la derecha del multiplicador';
   wrap.appendChild(note);
   setTimeout(()=>paper.querySelector('[data-type="mulstep"]')?.focus(),0);
 }
@@ -1236,7 +1228,7 @@ function updateCounter(){$('counter').textContent=`Hechas: ${completedThisSessio
 function infoHtml(){
   if(selectedOp==='add')return '<p><b>Sumas:</b> escribe las llevadas en las casillas pequeñas de arriba y el resultado debajo de la línea.</p><p>Los números pueden tener distinta cantidad de cifras y se alinean por la derecha.</p>';
   if(selectedOp==='sub')return '<p><b>Restas:</b> si no puedes restar, escribe un <b>1 arriba</b> para añadir 10.</p><p>Ese 1 pasa a la columna de la izquierda: <b>súmalo al número de abajo y escribe su nuevo valor</b>. El número anterior se tacha automáticamente.</p>';
-  if(selectedOp==='mul')return '<p><b>Multiplicaciones:</b> empieza por la cifra de la derecha y calcula cada cifra por separado. Por ejemplo, en 666 × 2, escribe 12, 12 y 12.</p><p>Las casillas se colocan escalonadas para mostrar su posición. Después escribe el resultado final debajo de la línea.</p>';
+  if(selectedOp==='mul')return '<p><b>Multiplicaciones:</b> elige por separado las cifras del multiplicando y del multiplicador. Empieza por la cifra derecha del multiplicador y calcula cada pareja de cifras por separado.</p><p>Las casillas se colocan escalonadas según su posición. Después escribe el resultado final debajo de la línea.</p>';
   return '<p><b>Divisiones:</b> elige las cifras del dividendo y del divisor, y practica resultados enteros, decimales exactos o periódicos.</p><p>Sigue el método tradicional: escribe una cifra del cociente, multiplica por el divisor, coloca el producto debajo, resta y baja la siguiente cifra. La línea morada indica las cifras periódicas.</p>';
 }
 function renderHistory(name){const hist=[...historyFor(name)].sort((a,b)=>new Date(b.date)-new Date(a.date));$('historyUser').textContent=name?`${name} · últimos ${RETENTION_DAYS} días`:'Selecciona un usuario';if(!name||!db.users[name]){$('stats').innerHTML='';$('historyList').innerHTML='<div class="empty">No hay un usuario seleccionado.</div>';$('clearHistory').style.display='none';return}$('clearHistory').style.display='inline-block';const total=hist.length,firstTry=hist.filter(x=>x.attempts?.length===1&&x.attempts[0].correct&&!x.solutionUsed).length,solutions=hist.filter(x=>x.solutionUsed).length;$('stats').innerHTML=`<div class="stat"><b>${total}</b><span>ejercicios</span></div><div class="stat"><b>${firstTry}</b><span>a la primera</span></div><div class="stat"><b>${solutions}</b><span>con respuesta</span></div>`;if(!hist.length){$('historyList').innerHTML='<div class="empty">Todavía no hay ejercicios guardados.</div>';return}$('historyList').innerHTML=hist.map(x=>{const dt=new Date(x.date),date=dt.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'})+' '+dt.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}),op=symbolOp(x.operation),tries=(x.attempts||[]).map((a,i)=>`<span class="tag ${a.correct?'oktag':'badtag'}">${i+1}: ${escapeHtml(a.answer)} ${a.correct?'✓':'✗'}</span>`).join(' '),sol=x.solutionUsed?'<span class="tag">vio respuesta</span>':'';return `<div class="history-item"><div class="history-top"><div><div class="expression">${x.operation==='add'&&x.operands?.length?x.operands.join(' + '):`${x.a} ${op} ${x.b}`} = ${x.result}</div><span class="tag">${labelOp(x.operation)}</span></div><div class="date">${date}</div></div><div class="attempts">${tries||'<span class="tag">sin correcciones</span>'} ${sol}</div></div>`}).join('')}
