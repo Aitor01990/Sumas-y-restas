@@ -1,7 +1,9 @@
 
 
 const $=id=>document.getElementById(id);
-const STORAGE_KEY='sumasRestas_v5'; // conservar datos de versiones anteriores
+const STORAGE_KEY='sumasRestas_v5'; // conservar usuarios e historial de la aplicación estable
+const APP_VERSION='2.1.0';
+const DEFAULT_PREFERENCES={largeText:false,highContrast:false,sounds:false,voice:false};
 
 let db=loadDB();
 let currentUser='';
@@ -19,6 +21,7 @@ const DEFAULT_PROFILES={
 let settingsState=clone(DEFAULT_SETTINGS),programProfiles=clone(DEFAULT_PROFILES);
 let current=null,record=null,completedThisSession=0,exerciseSolved=false,revealConfirm=false;
 let sessionMode='single',programMode='practice',programCounts={add:0,sub:0,mul:0,div:0},exerciseQueue=[],queueIndex=0,examResults=[],practiceResults=[];
+let lastExerciseSignature='';
 
 function loadDB(){
   try{
@@ -45,6 +48,17 @@ function exactDigits(d){return [10**(d-1),10**d-1]}
 function digitsOf(n,d){return String(n).padStart(d,'0').split('').map(Number)}
 function labelOp(op){return({add:'Suma',sub:'Resta',mul:'Multiplicación',div:'División'})[op]||op}
 function symbolOp(op){return({add:'+',sub:'−',mul:'×',div:'÷'})[op]||'?'}
+function operationConfigText(op,s){
+  if(op==='add')return `${s.digits} × ${s.count} ${s.carry==='yes'?'con llevadas':'sin llevadas'}`;
+  if(op==='sub')return `${s.digits} cifras ${s.carry==='yes'?'con llevadas':'sin llevadas'}`;
+  if(op==='mul')return `${s.multiplicandDigits} × ${s.multiplierDigits} cifras`;
+  const resultName={integer:'entero exacto',terminating:'decimal exacto',pure:'periódico sencillo',mixed:'periódico mixto'}[s.resultType]||s.resultType;
+  return `${s.dividendDigits} ÷ ${s.divisorDigits} · ${resultName}`;
+}
+function updateOperationDescriptions(){
+  ['add','sub','mul','div'].forEach(op=>{const hint=document.querySelector(`[data-op="${op}"] .op-hint`);if(hint)hint.textContent=operationConfigText(op,settingsState[op])});
+  ['practice','exam'].forEach(mode=>{const profile=programProfiles[mode],hint=document.querySelector(`[data-program="${mode}"] .op-hint`),names={add:'Sumas',sub:'Restas',mul:'Multiplicaciones',div:'Divisiones'},items=['add','sub','mul','div'].filter(op=>profile.counts[op]>0).map(op=>`<span><b>${profile.counts[op]} × ${names[op]}</b> · ${operationConfigText(op,profile.settings[op])}</span>`);if(hint)hint.innerHTML=items.length?`<span class="op-config-list">${items.join('')}</span>`:'Sin ejercicios configurados'});
+}
 function isExamSession(){return sessionMode==='exam'||sessionMode==='supportExam'}
 function clone(value){return JSON.parse(JSON.stringify(value))}
 function mergeSettings(source={}){
@@ -63,8 +77,14 @@ function ensureUserConfig(){
     programProfiles[mode].settings=mergeSettings(saved.settings||{});
   });
   persistUserConfig();
+  if(!user.preferences)user.preferences=clone(DEFAULT_PREFERENCES);
+  applyPreferences();
 }
 function persistUserConfig(){const user=db.users[currentUser];if(!user)return;user.config={main:clone(settingsState),profiles:clone(programProfiles)};saveDB()}
+function userPreferences(){const user=db.users[currentUser];if(!user)return clone(DEFAULT_PREFERENCES);return user.preferences||(user.preferences=clone(DEFAULT_PREFERENCES))}
+function applyPreferences(){const p=userPreferences();document.body.classList.toggle('large-math',!!p.largeText);document.body.classList.toggle('high-contrast',!!p.highContrast)}
+function playFeedback(ok){if(!userPreferences().sounds)return;try{const ctx=new(window.AudioContext||window.webkitAudioContext)(),osc=ctx.createOscillator(),gain=ctx.createGain();osc.frequency.value=ok?660:220;gain.gain.value=.06;osc.connect(gain);gain.connect(ctx.destination);osc.start();osc.stop(ctx.currentTime+.12)}catch(e){}}
+function speakCurrent(){if(!('speechSynthesis'in window)||!current)return;window.speechSynthesis.cancel();const text=current.op==='add'?`${current.operands.join(' más ')}`:`${current.a} ${ {sub:'menos',mul:'por',div:'entre'}[current.op]||'más'} ${current.b}`;window.speechSynthesis.speak(new SpeechSynthesisUtterance(text))}
 function sessionsForUser(){const user=db.users[currentUser];if(!user)return[];if(!Array.isArray(user.sessions))user.sessions=[];return user.sessions}
 function weekStartKey(value=new Date()){const d=new Date(value);d.setHours(12,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return localDateKey(d)}
 function completedSession(mode,period){return sessionsForUser().some(x=>x.mode===mode&&(period==='day'?localDateKey(x.date)===localDateKey(new Date()):weekStartKey(x.date)===weekStartKey()))}
@@ -113,6 +133,7 @@ function updateOperationStats(){
   const h=historyFor(currentUser);
   const first=h.filter(x=>x.attempts?.length===1&&x.attempts[0].correct&&!x.solutionUsed).length;
   $('operationUserStats').innerHTML=`<b>${escapeHtml(currentUser)}</b> · ${h.length} ejercicios · ${first} a la primera`;
+  updateOperationDescriptions();
   updateDailyGoal();
 }
 function updateDailyGoal(){
@@ -345,7 +366,15 @@ function renderSettings(){
     if(op==='div'&&target.div.resultType==='integer'&&target.div.divisorDigits>=target.div.dividendDigits)target.div.divisorDigits=Math.max(1,target.div.dividendDigits-1);
     renderSettings();
   });
+  const p=userPreferences(),hist=historyFor(currentUser),byOp=op=>hist.filter(x=>x.operation===op),success=op=>{const rows=byOp(op);return rows.length?Math.round(rows.filter(x=>x.attempts?.some(a=>a.correct)).length/rows.length*100):0};
+  $('settingsTools').innerHTML=`<section class="settings-group"><h2>Accesibilidad</h2><p class="settings-help">Estas opciones son individuales para ${escapeHtml(currentUser)}.</p><label class="toggle-setting"><input type="checkbox" data-pref="largeText" ${p.largeText?'checked':''}> Números y casillas grandes</label><label class="toggle-setting"><input type="checkbox" data-pref="highContrast" ${p.highContrast?'checked':''}> Alto contraste con ✓ y ✗</label><label class="toggle-setting"><input type="checkbox" data-pref="sounds" ${p.sounds?'checked':''}> Sonidos de acierto y error</label><label class="toggle-setting"><input type="checkbox" data-pref="voice" ${p.voice?'checked':''}> Leer cada ejercicio en voz alta</label></section><section class="settings-group"><h2>Progreso para adultos</h2><div class="parent-summary">${['add','sub','mul','div'].map(op=>`<div><b>${labelOp(op)}</b><span>${byOp(op).length} hechos · ${success(op)}% completados</span><button data-reset-op="${op}">Reiniciar apartado</button></div>`).join('')}</div></section><section class="settings-group"><h2>Copia de seguridad</h2><p class="settings-help">Exporta o recupera usuarios, configuraciones e historial.</p><div class="settings-tool-buttons"><button id="exportBackupBtn">Exportar copia</button><button id="importBackupBtn">Importar copia</button></div></section><section class="settings-group"><h2>Actualización</h2><p class="settings-help">Versión instalada: <b>${APP_VERSION}</b></p><button id="checkUpdateBtn" class="settings-tool-button">Buscar actualización</button><div id="manualUpdateStatus" class="settings-help"></div></section>`;
+  $('settingsTools').querySelectorAll('[data-pref]').forEach(input=>input.onchange=()=>{userPreferences()[input.dataset.pref]=input.checked;applyPreferences();saveDB()});
+  $('settingsTools').querySelectorAll('[data-reset-op]').forEach(btn=>btn.onclick=()=>{const op=btn.dataset.resetOp;if(confirm(`¿Borrar el historial de ${labelOp(op).toLowerCase()} de ${currentUser}?`)){db.users[currentUser].history=hist.filter(x=>x.operation!==op);saveDB();renderSettings()}});
+  $('exportBackupBtn').onclick=exportBackup;$('importBackupBtn').onclick=()=>$('importBackupInput').click();$('checkUpdateBtn').onclick=checkForUpdate;
 }
+function exportBackup(){const blob=new Blob([JSON.stringify({app:'Matemáticas tradicionales',version:APP_VERSION,exportedAt:new Date().toISOString(),data:db},null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`matematicas-${localDateKey()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+async function checkForUpdate(){const out=$('manualUpdateStatus');out.textContent='Buscando…';try{await swRegistration?.update();out.textContent=swRegistration?.waiting?'Actualización lista. Pulsa Actualizar en el aviso.':'La aplicación está actualizada.'}catch(e){out.textContent='No se pudo comprobar. Inténtalo con conexión.'}}
+$('importBackupInput').onchange=async e=>{const file=e.target.files?.[0];if(!file)return;try{const parsed=JSON.parse(await file.text()),incoming=parsed.data||parsed;if(!incoming.users)throw new Error();if(!confirm('¿Sustituir los datos actuales por esta copia?'))return;db=incoming;saveDB();currentUser='';renderUsers();showScreen('userScreen')}catch(err){alert('La copia no es válida')}finally{e.target.value=''}};
 function startSingleOperation(op){selectedOp=op;sessionMode='single';exerciseQueue=[];queueIndex=0;completedThisSession=0;updateCounter();showScreen('exerciseScreen');newExercise()}
 function startConfiguredProgram(mode){
   const profile=programProfiles[mode];exerciseQueue=[];
@@ -461,19 +490,36 @@ function newExercise(queueItem=null){
     meta.resultType=expansion.kind;
   }
 
+  const signature=op==='add'?`${op}:${operands.join(',')}`:`${op}:${a}:${b}`;
+  if(signature===lastExerciseSignature)return newExercise(queueItem);
+  lastExerciseSignature=signature;
   current={op,a,b,result,n,operands,...meta};
   record={
     date:new Date().toISOString(),
     operation:op,a,b,result,
     operands:operands?operands.slice():undefined,
     settings:JSON.parse(JSON.stringify(settingsState[op])),
-    attempts:[],solutionUsed:false
+    attempts:[],solutionUsed:false,magicEraserUses:0
   };
   updateCounter();
   renderExercise();
+  if(userPreferences().voice)setTimeout(speakCurrent,150);
 }
 function makeText(parent,row,col,text,cls='digit',id=''){const el=document.createElement('div');el.textContent=text;el.className=cls;el.style.gridRow=row;el.style.gridColumn=col;if(id)el.id=id;parent.appendChild(el);return el}
-function onEdit(){exerciseSolved=false;$('mainBtn').textContent=isExamSession()?'Siguiente':'Corregir';$('solutionBtn').disabled=false;$('status').textContent='';$('status').className='status';resetReveal()}
+function updateMagicEraser(){const btn=$('magicEraserBtn');if(btn)btn.style.display=!isExamSession()&&document.querySelector('#math input.bad')?'block':'none'}
+function onEdit(){exerciseSolved=false;$('mainBtn').textContent=isExamSession()?'Siguiente':'Corregir';$('solutionBtn').disabled=false;$('status').textContent='';$('status').className='status';resetReveal();updateMagicEraser()}
+function eraseWrongAnswers(){
+  const wrong=[...document.querySelectorAll('#math input.bad')];
+  if(!wrong.length)return updateMagicEraser();
+  wrong.forEach(inp=>{
+    inp.value='';inp.classList.remove('bad');
+    if(inp.dataset.type==='bottomreplacement')$('bottom-'+inp.dataset.index)?.classList.remove('changed');
+  });
+  if(record)record.magicEraserUses=(record.magicEraserUses||0)+1;
+  exerciseSolved=false;$('mainBtn').textContent='Corregir';$('solutionBtn').disabled=false;resetReveal();updateMagicEraser();
+  $('status').textContent='¡Listo! Intenta de nuevo las casillas borradas';$('status').className='status';
+  wrong[0].focus();
+}
 function makeInput(parent,row,col,type,index,enabled=true,maxLength=1){const input=document.createElement('input');input.className='small-input'+(maxLength===2?' two':'');input.inputMode='numeric';input.maxLength=maxLength;input.autocomplete='off';input.dataset.type=type;input.dataset.index=index;input.style.gridRow=row;input.style.gridColumn=col;if(!enabled)input.disabled=true;input.addEventListener('input',()=>{input.value=input.value.replace(/\D/g,'').slice(0,maxLength);input.classList.remove('good','bad');onEdit();if(type==='bottomreplacement'){const original=$('bottom-'+index);if(original)original.classList.toggle('changed',input.value!=='')}});parent.appendChild(input);return input}
 function makeAnswer(parent,row,col,index){const input=document.createElement('input');input.className='answer';input.inputMode='numeric';input.maxLength=1;input.autocomplete='off';input.dataset.type='answer';input.dataset.index=index;input.style.gridRow=row;input.style.gridColumn=col;input.addEventListener('input',()=>{input.value=input.value.replace(/\D/g,'').slice(-1);input.classList.remove('good','bad');onEdit()});parent.appendChild(input);return input}
 function renderExercise(){
@@ -488,6 +534,7 @@ function renderExercise(){
   $('exerciseLabel').textContent=labelOp(current.op);
   const host=$('math');
   host.innerHTML='';
+  updateMagicEraser();
 
   if(current.op==='div')return renderDivision(host);
   if(current.op==='add')return renderAddition(host);
@@ -842,7 +889,7 @@ function showPracticeResults(){
   registerCompletedSession('practice');
   $('resultTitle').textContent='Resumen de la práctica';
   $('examScore').textContent=`${practiceResults.length} ejercicio${practiceResults.length===1?'':'s'}`;
-  $('examReview').innerHTML=practiceResults.map((x,i)=>`<div class="exam-review-item ${x.correct?'ok':x.solutionUsed?'':'fail'}"><div>${i+1}. ${escapeHtml(x.expression)}</div><small>Intentos: ${x.attempts} · ${x.correct?'Completado correctamente ✓':x.solutionUsed?'Completado con la respuesta':'Sin completar'}${x.solutionUsed?' · Usó Ver respuesta':' · Sin ver la respuesta'}</small></div>`).join('');
+  $('examReview').innerHTML=practiceResults.map((x,i)=>`<div class="exam-review-item ${x.correct?'ok':x.solutionUsed?'':'fail'}"><div>${i+1}. ${escapeHtml(x.expression)}</div><small>Intentos: ${x.attempts} · ${x.correct?'Completado correctamente ✓':x.solutionUsed?'Completado con la respuesta':'Sin completar'}${x.solutionUsed?' · Usó Ver respuesta':' · Sin ver la respuesta'}${x.magicEraserUses?` · Goma mágica: ${x.magicEraserUses}`:''}</small></div>`).join('');
   showScreen('examResultScreen');
 }
 function grade(){
@@ -911,12 +958,17 @@ function grade(){
     $('status').className='status ok';
     $('mainBtn').textContent='Siguiente';
     $('solutionBtn').disabled=true;
+    updateMagicEraser();
+    playFeedback(true);
     commitRecord();
     completedThisSession++;
     updateCounter();
   }else{
-    $('status').textContent='Revisa las casillas en rojo';
+    const hints={add:'Revisa las casillas rojas y las llevadas.',sub:'Revisa los préstamos y las cifras modificadas.',mul:'Comprueba cada producto parcial antes del resultado.',div:'Sigue el orden: divide, multiplica, resta y baja.'};
+    $('status').textContent=hints[current.op]||'Revisa las casillas en rojo';
     $('status').className='status error';
+    updateMagicEraser();
+    playFeedback(false);
   }
   return ok;
 }
@@ -971,6 +1023,7 @@ function fillSolution(){
   $('status').className='status ok';
   $('mainBtn').textContent='Siguiente';
   $('solutionBtn').disabled=true;
+  updateMagicEraser();
   resetReveal();
   commitRecord();
   completedThisSession++;
@@ -979,7 +1032,7 @@ function fillSolution(){
 function commitRecord(){
   if(!record||!currentUser)return;
   record.completedAt=new Date().toISOString();
-  if(sessionMode==='practice')practiceResults.push({expression:record.operation==='add'&&record.operands?.length?`${record.operands.join(' + ')} = ${record.result}`:`${record.a} ${symbolOp(record.operation)} ${record.b} = ${record.result}`,attempts:record.attempts.length,correct:record.attempts.some(x=>x.correct),solutionUsed:record.solutionUsed});
+  if(sessionMode==='practice')practiceResults.push({expression:record.operation==='add'&&record.operands?.length?`${record.operands.join(' + ')} = ${record.result}`:`${record.a} ${symbolOp(record.operation)} ${record.b} = ${record.result}`,attempts:record.attempts.length,correct:record.attempts.some(x=>x.correct),solutionUsed:record.solutionUsed,magicEraserUses:record.magicEraserUses||0});
   db.users[currentUser].history.push(record);saveDB();record=null
 }
 function resetReveal(){revealConfirm=false;$('solutionBtn').textContent='Ver respuesta';$('solutionBtn').classList.remove('confirm')}
@@ -1019,7 +1072,8 @@ function renderHistoryCalendar(name){
   if(!name||!db.users[name]){$('stats').innerHTML='';$('streakNote').textContent='';$('historyCalendar').innerHTML='';$('historyList').innerHTML='<div class="empty">No hay un usuario seleccionado.</div>';$('clearHistory').style.display='none';return}
   $('clearHistory').style.display='inline-block';const total=summaryHist.length,firstTry=summaryHist.filter(x=>x.attempts?.length===1&&x.attempts[0].correct&&!x.solutionUsed).length,solutions=summaryHist.filter(x=>x.solutionUsed).length,streak=activityStreak(hist.map(x=>localDateKey(x.date)));
   $('stats').innerHTML=`<div class="stat"><b>${total}</b><span>ejercicios</span></div><div class="stat"><b>${firstTry}</b><span>a la primera</span></div><div class="stat"><b>${solutions}</b><span>con respuesta</span></div><div class="stat"><b>${streak}</b><span>días de racha</span></div>`;
-  $('streakNote').textContent=streak?`🔥 ${streak} día${streak===1?'':'s'} seguido${streak===1?'':'s'} practicando`:'Haz un ejercicio hoy para comenzar una racha';
+  const milestone=streak>=30?'🏆 Racha de 30 días':streak>=14?'🌟 Racha de 14 días':streak>=7?'🥇 Racha de 7 días':streak>=3?'🎉 Primera racha de 3 días':'';
+  $('streakNote').textContent=streak?`🔥 ${streak} día${streak===1?'':'s'} seguido${streak===1?'':'s'} practicando${milestone?` · ${milestone}`:''}`:'Haz un ejercicio hoy para comenzar una racha';
   if(!selectedHistoryDate)selectedHistoryDate=hist.length?localDateKey(hist[0].date):localDateKey(new Date());renderCalendar(hist);
   const dayHist=hist.filter(x=>localDateKey(x.date)===selectedHistoryDate),daySessions=sessionsForUser().filter(x=>localDateKey(x.date)===selectedHistoryDate),practiceDone=daySessions.some(x=>x.mode==='practice'),bestDayExam=bestExamSession(daySessions),dateLabel=new Date(`${selectedHistoryDate}T12:00:00`).toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'}),dayAchievements=`<div class="day-achievements">${practiceDone?'<span>✓ Modo ejercicios completado</span>':''}${bestDayExam?`<span>★ Mejor nota: <b>${formatGrade(bestDayExam.grade)}/10</b> · ${examMotivation(bestDayExam.grade).icon} ${examMotivation(bestDayExam.grade).message}</span>`:''}</div>`;
   if(!dayHist.length){$('historyList').innerHTML=`<div class="history-day-title">${dateLabel}</div>${dayAchievements}<div class="empty">No se hicieron ejercicios este día.</div>`;return}
@@ -1050,6 +1104,7 @@ $('startBtn').onclick=()=>{
 };
 $('backBtn').onclick=()=>{if(sessionMode==='supportExam'){record=null;showScreen('supportIntroScreen');return}showScreen('operationScreen');updateOperationStats()};
 $('mainBtn').onclick=()=>{if(isExamSession())return submitExamExercise();if(exerciseSolved)return sessionMode==='practice'?advanceQueuedExercise():newExercise();grade()};
+$('magicEraserBtn').onclick=eraseWrongAnswers;
 $('finishExamBtn').onclick=()=>{sessionMode='single';showScreen('operationScreen');updateOperationStats()};
 $('solutionBtn').onclick=()=>{
   if(!revealConfirm){
@@ -1099,7 +1154,7 @@ $('updateBtn').onclick=()=>{if(swRegistration?.waiting)swRegistration.waiting.po
 if('serviceWorker'in navigator){
   window.addEventListener('load',async()=>{
     try{
-      swRegistration=await navigator.serviceWorker.register('./service-worker.js');
+      swRegistration=await navigator.serviceWorker.register('./service-worker.js',{updateViaCache:'none'});
       if(swRegistration.waiting)showUpdate();
       swRegistration.addEventListener('updatefound',()=>{
         const nw=swRegistration.installing;
