@@ -68,7 +68,17 @@ function persistUserConfig(){const user=db.users[currentUser];if(!user)return;us
 function sessionsForUser(){const user=db.users[currentUser];if(!user)return[];if(!Array.isArray(user.sessions))user.sessions=[];return user.sessions}
 function weekStartKey(value=new Date()){const d=new Date(value);d.setHours(12,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return localDateKey(d)}
 function completedSession(mode,period){return sessionsForUser().some(x=>x.mode===mode&&(period==='day'?localDateKey(x.date)===localDateKey(new Date()):weekStartKey(x.date)===weekStartKey()))}
-function registerCompletedSession(mode){sessionsForUser().push({mode,date:new Date().toISOString()});saveDB()}
+function examGrade(correct,total){return total?Math.round(correct/total*100)/10:0}
+function formatGrade(grade){return Number.isInteger(grade)?String(grade):String(grade).replace('.',',')}
+function examMotivation(grade){
+  if(grade<5)return{icon:'🌱',message:'Sigue creciendo, estás aprendiendo paso a paso'};
+  if(grade<7)return{icon:'👍',message:'¡Bien hecho! Vas por buen camino'};
+  if(grade<9)return{icon:'🚀',message:'¡Muy bien! Se nota tu esfuerzo'};
+  if(grade<10)return{icon:'🌟',message:'¡Asombroso! Casi perfecto'};
+  return{icon:'🏆',message:'¡Brillante! Ha sido perfecto'};
+}
+function bestExamSession(items){return items.filter(x=>x.mode==='exam'&&Number.isFinite(x.grade)).sort((a,b)=>b.grade-a.grade)[0]||null}
+function registerCompletedSession(mode,details={}){sessionsForUser().push({mode,date:new Date().toISOString(),...details});saveDB()}
 
 function openUser(name){
   currentUser=name;
@@ -106,8 +116,8 @@ function updateOperationStats(){
   updateDailyGoal();
 }
 function updateDailyGoal(){
-  if(!db.users[currentUser])return;const dailyDone=completedSession('practice','day'),weeklyDone=completedSession('exam','week');
-  $('dailyGoalBox').innerHTML=`<div class="habit-goal ${dailyDone?'done':''}"><span>${dailyDone?'✓':'○'}</span><div><b>Objetivo diario</b><small>${dailyDone?'Modo ejercicios completado hoy':'Completa el Modo ejercicios una vez hoy'}</small></div></div><div class="habit-goal ${weeklyDone?'done':''}"><span>${weeklyDone?'✓':'○'}</span><div><b>Objetivo semanal</b><small>${weeklyDone?'Modo examen completado esta semana':'Completa el Modo examen una vez esta semana'}</small></div></div>`;
+  if(!db.users[currentUser])return;const dailyDone=completedSession('practice','day'),weeklyDone=completedSession('exam','week'),weekSessions=sessionsForUser().filter(x=>x.mode==='exam'&&weekStartKey(x.date)===weekStartKey()),best=bestExamSession(weekSessions),motivation=best?examMotivation(best.grade):null;
+  $('dailyGoalBox').innerHTML=`<div class="habit-goal ${dailyDone?'done':''}"><span>${dailyDone?'✓':'○'}</span><div><b>Objetivo diario</b><small>${dailyDone?'Modo ejercicios completado hoy':'Completa el Modo ejercicios una vez hoy'}</small></div></div><div class="habit-goal ${weeklyDone?'done':''}"><span>${weeklyDone?'★':'☆'}</span><div><b>Objetivo semanal</b><small>${best?`Mejor nota: <strong>${formatGrade(best.grade)}/10</strong> · ${motivation.icon} ${motivation.message}`:weeklyDone?'Modo examen completado esta semana':'Completa el Modo examen una vez esta semana'}</small></div></div>`;
 }
 $('newUserBtn').onclick=()=>{$('newUserRow').classList.toggle('show');if($('newUserRow').classList.contains('show'))$('newUserName').focus()};
 $('saveUserBtn').onclick=()=>{
@@ -821,10 +831,10 @@ function startSupportChallenge(){
   ]);queueIndex=0;examResults=[];practiceResults=[];completedThisSession=0;sessionMode='supportExam';showScreen('exerciseScreen');newExercise(exerciseQueue[0]);
 }
 function showExamResults(){
-  const correct=examResults.filter(x=>x.correct).length,total=examResults.length;
-  registerCompletedSession('exam');
+  const correct=examResults.filter(x=>x.correct).length,total=examResults.length,grade=examGrade(correct,total),motivation=examMotivation(grade);
+  registerCompletedSession('exam',{correct,total,grade});
   $('resultTitle').textContent='Resultado del examen';
-  $('examScore').textContent=`${correct} / ${total}`;
+  $('examScore').innerHTML=`<span class="exam-sticker">${motivation.icon}</span><b>${formatGrade(grade)}/10</b><small>${motivation.message}</small><em>${correct} de ${total} ejercicios correctos</em>`;
   $('examReview').innerHTML=examResults.map((x,i)=>`<div class="exam-review-item ${x.correct?'ok':'fail'}"><div>${i+1}. ${escapeHtml(x.expression)} · ${x.correct?'✓':`Tu respuesta final: ${escapeHtml(x.answer)} ✗`}</div>${x.mistakes?.length?`<small>${x.mistakes.map(m=>escapeHtml(m)).join(' · ')}</small>`:''}</div>`).join('');
   showScreen('examResultScreen');
 }
@@ -990,10 +1000,10 @@ function activityStreak(keys){
   let streak=0;while(active.has(localDateKey(cursor))){streak++;cursor.setDate(cursor.getDate()-1)}return streak
 }
 function renderCalendar(hist){
-  const dayCounts={};hist.forEach(x=>{const key=localDateKey(x.date);dayCounts[key]=(dayCounts[key]||0)+1});const active=new Set(Object.keys(dayCounts)),practiceDays=new Set(sessionsForUser().filter(x=>x.mode==='practice').map(x=>localDateKey(x.date))),year=historyMonth.getFullYear(),month=historyMonth.getMonth(),first=(new Date(year,month,1).getDay()+6)%7,days=new Date(year,month+1,0).getDate();
+  const dayCounts={};hist.forEach(x=>{const key=localDateKey(x.date);dayCounts[key]=(dayCounts[key]||0)+1});const active=new Set(Object.keys(dayCounts)),sessions=sessionsForUser(),practiceDays=new Set(sessions.filter(x=>x.mode==='practice').map(x=>localDateKey(x.date))),bestExamByDay={};sessions.filter(x=>x.mode==='exam'&&Number.isFinite(x.grade)).forEach(x=>{const key=localDateKey(x.date);bestExamByDay[key]=Math.max(bestExamByDay[key]??-1,x.grade)});const year=historyMonth.getFullYear(),month=historyMonth.getMonth(),first=(new Date(year,month,1).getDay()+6)%7,days=new Date(year,month+1,0).getDate();
   let cells='<div class="calendar-week">'+['L','M','X','J','V','S','D'].map(x=>`<span>${x}</span>`).join('')+'</div><div class="calendar-grid">';
   for(let i=0;i<first;i++)cells+='<span class="calendar-day empty"></span>';
-  for(let day=1;day<=days;day++){const key=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;cells+=`<button class="calendar-day ${active.has(key)?'has-work':''} ${practiceDays.has(key)?'goal-done':''} ${selectedHistoryDate===key?'selected':''}" data-history-day="${key}" title="${dayCounts[key]||0} ejercicios">${day}</button>`}
+  for(let day=1;day<=days;day++){const key=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`,examGradeForDay=bestExamByDay[key];cells+=`<button class="calendar-day ${active.has(key)?'has-work':''} ${selectedHistoryDate===key?'selected':''}" data-history-day="${key}" title="${dayCounts[key]||0} ejercicios"><span class="calendar-number">${day}</span><span class="calendar-marks">${practiceDays.has(key)?'<i title="Modo ejercicios completado">✓</i>':''}${Number.isFinite(examGradeForDay)?`<b title="Mejor nota del día">★ ${formatGrade(examGradeForDay)}</b>`:''}</span></button>`}
   cells+='</div>';
   $('historyCalendar').innerHTML=`<div class="calendar-head"><button data-calendar-move="-1">‹</button><b>${historyMonth.toLocaleDateString('es-ES',{month:'long',year:'numeric'})}</b><button data-calendar-move="1">›</button></div>${cells}`;
   $('historyCalendar').querySelectorAll('[data-calendar-move]').forEach(btn=>btn.onclick=()=>{historyMonth=new Date(year,month+(+btn.dataset.calendarMove),1);renderHistoryCalendar(currentUser)});
@@ -1011,10 +1021,10 @@ function renderHistoryCalendar(name){
   $('stats').innerHTML=`<div class="stat"><b>${total}</b><span>ejercicios</span></div><div class="stat"><b>${firstTry}</b><span>a la primera</span></div><div class="stat"><b>${solutions}</b><span>con respuesta</span></div><div class="stat"><b>${streak}</b><span>días de racha</span></div>`;
   $('streakNote').textContent=streak?`🔥 ${streak} día${streak===1?'':'s'} seguido${streak===1?'':'s'} practicando`:'Haz un ejercicio hoy para comenzar una racha';
   if(!selectedHistoryDate)selectedHistoryDate=hist.length?localDateKey(hist[0].date):localDateKey(new Date());renderCalendar(hist);
-  const dayHist=hist.filter(x=>localDateKey(x.date)===selectedHistoryDate),dateLabel=new Date(`${selectedHistoryDate}T12:00:00`).toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
-  if(!dayHist.length){$('historyList').innerHTML=`<div class="history-day-title">${dateLabel}</div><div class="empty">No se hicieron ejercicios este día.</div>`;return}
+  const dayHist=hist.filter(x=>localDateKey(x.date)===selectedHistoryDate),daySessions=sessionsForUser().filter(x=>localDateKey(x.date)===selectedHistoryDate),practiceDone=daySessions.some(x=>x.mode==='practice'),bestDayExam=bestExamSession(daySessions),dateLabel=new Date(`${selectedHistoryDate}T12:00:00`).toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'}),dayAchievements=`<div class="day-achievements">${practiceDone?'<span>✓ Modo ejercicios completado</span>':''}${bestDayExam?`<span>★ Mejor nota: <b>${formatGrade(bestDayExam.grade)}/10</b> · ${examMotivation(bestDayExam.grade).icon} ${examMotivation(bestDayExam.grade).message}</span>`:''}</div>`;
+  if(!dayHist.length){$('historyList').innerHTML=`<div class="history-day-title">${dateLabel}</div>${dayAchievements}<div class="empty">No se hicieron ejercicios este día.</div>`;return}
   const counts=['add','sub','mul','div'].map(op=>{const n=dayHist.filter(x=>x.operation===op).length;return n?`<span class="tag">${labelOp(op)}: ${n}</span>`:''}).join('');
-  $('historyList').innerHTML=`<div class="history-day-title">${dateLabel}</div><div>${counts}</div>`+dayHist.map(x=>{const tries=(x.attempts||[]).map((a,i)=>`<span class="tag ${a.correct?'oktag':'badtag'}">${i+1}: ${escapeHtml(a.answer)} ${a.correct?'✓':'✗'}</span>`).join(' '),sol=x.solutionUsed?'<span class="tag">vio respuesta</span>':'';return`<div class="history-item"><div class="history-top"><div><div class="expression">${historyExpression(x)} = ${x.result}</div><span class="tag">${labelOp(x.operation)}</span></div></div><div class="attempts">${tries||'<span class="tag">sin correcciones</span>'} ${sol}</div></div>`}).join('');
+  $('historyList').innerHTML=`<div class="history-day-title">${dateLabel}</div>${dayAchievements}<div>${counts}</div>`+dayHist.map(x=>{const tries=(x.attempts||[]).map((a,i)=>`<span class="tag ${a.correct?'oktag':'badtag'}">${i+1}: ${escapeHtml(a.answer)} ${a.correct?'✓':'✗'}</span>`).join(' '),sol=x.solutionUsed?'<span class="tag">vio respuesta</span>':'';return`<div class="history-item"><div class="history-top"><div><div class="expression">${historyExpression(x)} = ${x.result}</div><span class="tag">${labelOp(x.operation)}</span></div></div><div class="attempts">${tries||'<span class="tag">sin correcciones</span>'} ${sol}</div></div>`}).join('');
 }
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
@@ -1069,6 +1079,7 @@ $('clearHistory').onclick=()=>{
   if(!currentUser||!db.users[currentUser])return;
   if(confirm(`¿Borrar todo el historial de ${currentUser}?`)){
     db.users[currentUser].history=[];
+    db.users[currentUser].sessions=[];
     saveDB();
     renderHistoryCalendar(currentUser);
     updateOperationStats();
