@@ -2,7 +2,8 @@
 
 const $=id=>document.getElementById(id);
 const STORAGE_KEY='sumasRestas_v5'; // conservar usuarios e historial de la aplicación estable
-const APP_VERSION='2.1.0';
+const APP_VERSION='2.2.0';
+const APP_SHARE_URL='https://aitor01990.github.io/Sumas-y-restas/';
 const DEFAULT_PREFERENCES={largeText:false,highContrast:false,sounds:false,voice:false};
 
 let db=loadDB();
@@ -150,6 +151,20 @@ $('saveUserBtn').onclick=()=>{
   openUser(n);
 };
 $('newUserName').addEventListener('keydown',e=>{if(e.key==='Enter')$('saveUserBtn').click()});
+function setShareStatus(message,isError=false){$('shareStatus').textContent=message;$('shareStatus').classList.toggle('error',isError);clearTimeout(setShareStatus.timer);setShareStatus.timer=setTimeout(()=>{$('shareStatus').textContent='';$('shareStatus').classList.remove('error')},3000)}
+async function copyAppLink(){
+  try{
+    if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(APP_SHARE_URL);
+    else{const area=document.createElement('textarea');area.value=APP_SHARE_URL;area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();if(!document.execCommand('copy'))throw new Error();area.remove()}
+    setShareStatus('Enlace copiado ✓');return true
+  }catch(e){setShareStatus('No se pudo copiar el enlace',true);return false}
+}
+async function shareApp(){
+  if(navigator.share){try{await navigator.share({title:'Matemáticas tradicionales',text:'Practica matemáticas tradicionales paso a paso.',url:APP_SHARE_URL});setShareStatus('Aplicación compartida ✓');return}catch(e){if(e.name==='AbortError')return}}
+  await copyAppLink()
+}
+$('copyAppLinkBtn').onclick=copyAppLink;
+$('shareAppBtn').onclick=shareApp;
 
 function addCarries(numbers,n){
   let carry=0,carries=Array(n).fill(0),any=false;
@@ -866,8 +881,9 @@ function showSupportResults(){
   $('supportResultMessage').textContent=passed?'¡Ahora sí te creemos! 😄 Gracias de corazón por valorar el trabajo y por ese café.':'¡Casi! Parece que todavía necesitas un poco más de práctica 😄';
   $('supportScore').textContent=`${correct} / 4`;
   $('supportReview').innerHTML=examResults.map((x,i)=>`<div class="exam-review-item ${x.correct?'ok':'fail'}"><div>${i+1}. ${escapeHtml(x.expression)} · ${x.correct?'✓':`Tu respuesta final: ${escapeHtml(x.answer)} ✗`}</div>${x.mistakes?.length?`<small>${x.mistakes.map(m=>escapeHtml(m)).join(' · ')}</small>`:''}</div>`).join('');
-  $('openSupportLink').style.display=passed?'inline-grid':'none';$('retrySupportBtn').style.display=passed?'none':'';showScreen('supportResultScreen');
+  $('openSupportLink').style.display=passed?'inline-grid':'none';$('retrySupportBtn').style.display=passed?'none':'';$('supportConsent').style.display=passed?'flex':'none';$('supportConsentCheck').checked=false;updateSupportConsent();showScreen('supportResultScreen');
 }
+function updateSupportConsent(){const accepted=$('supportConsentCheck').checked,link=$('openSupportLink');link.classList.toggle('disabled',!accepted);link.setAttribute('aria-disabled',String(!accepted));link.tabIndex=accepted?0:-1}
 function leaveSupportChallenge(){sessionMode='single';exerciseQueue=[];examResults=[];queueIndex=0;record=null;showScreen('userScreen');renderUsers()}
 function startSupportChallenge(){
   exerciseQueue=shuffled([
@@ -1088,6 +1104,11 @@ $('backSupportIntroBtn').onclick=leaveSupportChallenge;$('declineSupportBtn').on
 $('acceptSupportBtn').onclick=startSupportChallenge;
 $('backSupportResultBtn').onclick=leaveSupportChallenge;$('leaveSupportBtn').onclick=leaveSupportChallenge;
 $('retrySupportBtn').onclick=startSupportChallenge;
+$('supportConsentCheck').onchange=updateSupportConsent;
+$('openSupportLink').onclick=e=>{if(!$('supportConsentCheck').checked)e.preventDefault()};
+$('legalInfoBtn').onclick=()=>$('legalModal').classList.add('show');
+$('closeLegal').onclick=()=>$('legalModal').classList.remove('show');
+$('legalModal').onclick=e=>{if(e.target===$('legalModal'))$('legalModal').classList.remove('show')};
 $('backSettingsBtn').onclick=()=>{showScreen('operationScreen');updateOperationStats()};
 $('saveSettingsBtn').onclick=()=>{persistUserConfig();$('settingsSaveNote').textContent='Ajustes guardados';setTimeout(()=>{$('settingsSaveNote').textContent='';showScreen('operationScreen');updateOperationStats()},650)};
 $('backOperationsBtn').onclick=()=>{showScreen('operationScreen');updateOperationStats()};
