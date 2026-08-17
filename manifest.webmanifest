@@ -3,7 +3,7 @@
   "short_name": "Matemáticas",
   "description": "Matemáticas tradicionales: sumas con varios sumandos, restas, multiplicaciones y divisiones.",
   "lang": "es",
-  "id": "/Sumas-y-restas/",
+  "id": "/Sumas-y-restas/index.html",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
