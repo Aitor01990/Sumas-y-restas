@@ -1,10 +1,9 @@
-name: Publicar versiones estable y beta
+name: Publicar versión estable
 
 on:
   push:
     branches:
       - main
-      - beta
   workflow_dispatch:
 
 permissions:
@@ -25,12 +24,6 @@ jobs:
         with:
           ref: main
           path: site
-
-      - name: Obtener versión beta
-        uses: actions/checkout@v6
-        with:
-          ref: beta
-          path: site/beta
 
       - name: Evitar el procesamiento de Jekyll
         run: touch site/.nojekyll
