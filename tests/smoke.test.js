@@ -50,15 +50,24 @@ test('objetivos por sesión diaria y semanal', () => {
 });
 
 test('la PWA mantiene los recursos esenciales', () => {
-  for (const file of ['./', './index.html', './styles.css?v=2.0.0', './app.js?v=2.0.0', './manifest.webmanifest', './icon-192.png', './icon-512.png']) {
+  for (const file of ['./', './index.html', './styles.css?v=2.1.0', './app.js?v=2.1.0', './manifest.webmanifest', './icon-192.png', './icon-512.png']) {
     assert.ok(sw.includes(`'${file}'`), `Falta ${file} en la caché`);
   }
+  assert.match(sw, /key\.startsWith\('matematicas-tradicionales-stable-'\)/);
 });
 
 test('HTML carga estilos y lógica separados', () => {
-  assert.match(html, /href="styles\.css\?v=2\.0\.0"/);
-  assert.match(html, /src="app\.js\?v=2\.0\.0"/);
+  assert.match(html, /href="styles\.css\?v=2\.1\.0"/);
+  assert.match(html, /src="app\.js\?v=2\.1\.0"/);
   assert.doesNotMatch(html, /<style>/);
+});
+
+test('la goma mágica borra solo las casillas incorrectas', () => {
+  assert.match(html, /id="magicEraserBtn"/);
+  assert.match(app, /document\.querySelectorAll\('#math input\.bad'\)/);
+  assert.match(app, /wrong\.forEach\(inp=>/);
+  assert.match(app, /inp\.value='';inp\.classList\.remove\('bad'\)/);
+  assert.match(app, /\?'block':'none'/);
 });
 
 test('guarda y muestra la mejor nota del examen', () => {
@@ -94,4 +103,32 @@ test('muestra el estado sin conexión y conserva actualización al volver', () =
   assert.match(app, /addEventListener\('offline'/);
   assert.match(app, /addEventListener\('online'/);
   assert.match(sw, /caches\.match/);
+});
+
+test('comprueba las actualizaciones PWA sin reutilizar la caché HTTP', () => {
+  assert.match(app, /register\('\.\/service-worker\.js',\{updateViaCache:'none'\}\)/);
+});
+
+test('V2.1.0 incluye herramientas familiares y accesibilidad', () => {
+  assert.match(html, /Versión 2\.1\.0/);
+  assert.match(app, /DEFAULT_PREFERENCES/);
+  assert.match(app, /exportBackup/);
+  assert.match(app, /checkForUpdate/);
+  assert.match(app, /Progreso para adultos/);
+  assert.match(app, /Racha de 30 días/);
+  assert.doesNotMatch(app, /sumasRestas_beta/);
+});
+
+test('la versión estable no contiene identidad beta', () => {
+  assert.doesNotMatch(html, /Beta|icon-beta/i);
+  assert.doesNotMatch(app, /Matemáticas Beta|matematicas-beta|sumasRestas_beta/);
+  assert.doesNotMatch(sw, /-beta-/);
+});
+
+test('muestra la configuración actual en cada modo', () => {
+  assert.match(app, /function operationConfigText/);
+  assert.match(app, /function updateOperationDescriptions/);
+  assert.match(app, /profile\.counts\[op\]/);
+  assert.match(app, /entero exacto/);
+  assert.match(app, /con llevadas/);
 });
