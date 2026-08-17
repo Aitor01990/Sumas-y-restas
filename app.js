@@ -1,7 +1,7 @@
 
 
 const $=id=>document.getElementById(id);
-const STORAGE_KEY='sumasRestas_v5'; // conservar datos de versiones anteriores
+const STORAGE_KEY='sumasRestas_beta_v1'; // datos independientes del canal estable
 
 let db=loadDB();
 let currentUser='';

@@ -1,9 +1,9 @@
 {
-  "name": "Matemáticas tradicionales",
-  "short_name": "Matemáticas",
-  "description": "Matemáticas tradicionales: sumas con varios sumandos, restas, multiplicaciones y divisiones.",
+  "name": "Matemáticas tradicionales Beta",
+  "short_name": "Matemáticas Beta",
+  "description": "Canal de pruebas de Matemáticas tradicionales.",
   "lang": "es",
-  "id": "/Sumas-y-restas/",
+  "id": "/Sumas-y-restas/beta/",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
