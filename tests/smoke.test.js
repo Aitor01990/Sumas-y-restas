@@ -50,15 +50,15 @@ test('objetivos por sesión diaria y semanal', () => {
 });
 
 test('la PWA mantiene los recursos esenciales', () => {
-  for (const file of ['./', './index.html', './styles.css?v=2.1.0', './app.js?v=2.1.0', './manifest.webmanifest', './icon-192.png', './icon-512.png']) {
+  for (const file of ['./', './index.html', './styles.css?v=2.2.0', './app.js?v=2.2.0', './manifest.webmanifest', './icon-192.png', './icon-512.png']) {
     assert.ok(sw.includes(`'${file}'`), `Falta ${file} en la caché`);
   }
   assert.match(sw, /key\.startsWith\('matematicas-tradicionales-stable-'\)/);
 });
 
 test('HTML carga estilos y lógica separados', () => {
-  assert.match(html, /href="styles\.css\?v=2\.1\.0"/);
-  assert.match(html, /src="app\.js\?v=2\.1\.0"/);
+  assert.match(html, /href="styles\.css\?v=2\.2\.0"/);
+  assert.match(html, /src="app\.js\?v=2\.2\.0"/);
   assert.doesNotMatch(html, /<style>/);
 });
 
@@ -109,20 +109,31 @@ test('comprueba las actualizaciones PWA sin reutilizar la caché HTTP', () => {
   assert.match(app, /register\('\.\/service-worker\.js',\{updateViaCache:'none'\}\)/);
 });
 
-test('V2.1.0 incluye herramientas familiares y accesibilidad', () => {
-  assert.match(html, /Versión 2\.1\.0/);
+test('V2.2.0 incluye herramientas familiares y accesibilidad', () => {
+  assert.match(html, /Versión 2\.2\.0/);
   assert.match(app, /DEFAULT_PREFERENCES/);
   assert.match(app, /exportBackup/);
   assert.match(app, /checkForUpdate/);
   assert.match(app, /Progreso para adultos/);
   assert.match(app, /Racha de 30 días/);
-  assert.doesNotMatch(app, /sumasRestas_beta/);
+  assert.match(app, /sumasRestas_v5/);
 });
 
-test('la versión estable no contiene identidad beta', () => {
+test('incluye información legal y exige confirmar las condiciones de la aportación', () => {
+  assert.match(html, /Información legal y privacidad/);
+  assert.match(html, /ni implican la obligación de desarrollar nuevas funciones/);
+  assert.match(html, /id="supportConsentCheck"/);
+  assert.match(html, /no implica ninguna contraprestación/);
+  assert.match(app, /function updateSupportConsent/);
+  assert.match(app, /if\(!\$\('supportConsentCheck'\)\.checked\)e\.preventDefault\(\)/);
+});
+
+test('la versión estable mantiene su identidad y datos', () => {
+  assert.match(html, /Matemáticas tradicionales/);
   assert.doesNotMatch(html, /Beta|icon-beta/i);
   assert.doesNotMatch(app, /Matemáticas Beta|matematicas-beta|sumasRestas_beta/);
-  assert.doesNotMatch(sw, /-beta-/);
+  assert.match(app, /sumasRestas_v5/);
+  assert.match(sw, /-stable-/);
 });
 
 test('muestra la configuración actual en cada modo', () => {
@@ -131,4 +142,12 @@ test('muestra la configuración actual en cada modo', () => {
   assert.match(app, /profile\.counts\[op\]/);
   assert.match(app, /entero exacto/);
   assert.match(app, /con llevadas/);
+});
+
+test('permite compartir o copiar el enlace oficial', () => {
+  assert.match(html, /id="shareAppBtn"/);
+  assert.match(html, /id="copyAppLinkBtn"/);
+  assert.match(app, /navigator\.share/);
+  assert.match(app, /navigator\.clipboard\?\.writeText/);
+  assert.match(app, /https:\/\/aitor01990\.github\.io\/Sumas-y-restas\//);
 });
