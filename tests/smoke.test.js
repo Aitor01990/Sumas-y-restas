@@ -53,6 +53,7 @@ test('la PWA mantiene los recursos esenciales', () => {
   for (const file of ['./', './index.html', './styles.css?v=2.0.0-beta.1', './app.js?v=2.0.0-beta.1', './manifest.webmanifest', './icon-192.png', './icon-512.png']) {
     assert.ok(sw.includes(`'${file}'`), `Falta ${file} en la caché`);
   }
+  assert.match(sw, /key\.startsWith\('matematicas-tradicionales-beta-'\)/);
 });
 
 test('HTML carga estilos y lógica separados', () => {
