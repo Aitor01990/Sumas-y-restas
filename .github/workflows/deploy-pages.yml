@@ -1,0 +1,55 @@
+name: Publicar versiones estable y beta
+
+on:
+  push:
+    branches:
+      - main
+      - beta
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obtener versión estable
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          path: site
+
+      - name: Obtener versión beta
+        uses: actions/checkout@v6
+        with:
+          ref: beta
+          path: site/beta
+
+      - name: Evitar el procesamiento de Jekyll
+        run: touch site/.nojekyll
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Preparar archivos para GitHub Pages
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Publicar en GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

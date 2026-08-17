@@ -50,14 +50,14 @@ test('objetivos por sesión diaria y semanal', () => {
 });
 
 test('la PWA mantiene los recursos esenciales', () => {
-  for (const file of ['./', './index.html', './styles.css?v=17.9', './app.js?v=17.9', './manifest.webmanifest', './icon-192.png', './icon-512.png']) {
+  for (const file of ['./', './index.html', './styles.css?v=2.0.0', './app.js?v=2.0.0', './manifest.webmanifest', './icon-192.png', './icon-512.png']) {
     assert.ok(sw.includes(`'${file}'`), `Falta ${file} en la caché`);
   }
 });
 
 test('HTML carga estilos y lógica separados', () => {
-  assert.match(html, /href="styles\.css\?v=17\.9"/);
-  assert.match(html, /src="app\.js\?v=17\.9"/);
+  assert.match(html, /href="styles\.css\?v=2\.0\.0"/);
+  assert.match(html, /src="app\.js\?v=2\.0\.0"/);
   assert.doesNotMatch(html, /<style>/);
 });
 
